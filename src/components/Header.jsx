@@ -76,7 +76,7 @@ const Header = () => {
               </div>
               <div>
                 <span className="text-2xl font-bold text-yellow-400">
-                  JobPortal
+                  Jobify
                 </span>
                 <span className="text-xs text-gray-400 block">Your Career Starts Here</span>
               </div>
