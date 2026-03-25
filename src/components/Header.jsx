@@ -13,8 +13,7 @@ import {
   Settings,
   HelpCircle,
   Sparkles,
-  TrendingUp,
-  Shield
+  TrendingUp
 } from 'lucide-react'
 
 const Header = () => {
@@ -117,7 +116,7 @@ const Header = () => {
             </div>
 
             {/* User Actions - Desktop */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-4 ml-8">
               {isLoggedIn ? (
                 <>
                   {/* Saved Jobs */}
@@ -219,10 +218,6 @@ const Header = () => {
                 </>
               ) : (
                 <>
-                  <a href="/employer" className="text-gray-200 hover:text-yellow-400 font-medium transition flex items-center gap-1">
-                    <Shield className="h-4 w-4" />
-                    For Employers
-                  </a>
                   <a href="/login" className="px-5 py-2 text-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-400/10 transition font-medium">
                     Sign In
                   </a>
@@ -263,10 +258,6 @@ const Header = () => {
               <a href="/companies" className="text-gray-200 hover:text-yellow-400 py-2 transition">Companies</a>
               <a href="/salaries" className="text-gray-200 hover:text-yellow-400 py-2 transition">Salaries</a>
               <a href="/career" className="text-gray-200 hover:text-yellow-400 py-2 transition">Career Advice</a>
-              <a href="/employer" className="text-gray-200 hover:text-yellow-400 py-2 transition flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                For Employers
-              </a>
               
               {!isLoggedIn && (
                 <div className="flex flex-col space-y-3 pt-3 border-t border-white/10">
