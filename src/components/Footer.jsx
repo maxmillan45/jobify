@@ -8,7 +8,7 @@ const Footer = () => {
           
           {/* Company Info */}
           <div>
-            <h3 className="text-xl font-bold text-yellow-400 mb-3">JobPortal</h3>
+            <h3 className="text-xl font-bold text-yellow-400 mb-3">Jobify</h3>
             <p className="text-gray-400 text-sm">
               Find your dream job with thousands of opportunities from top companies.
             </p>
@@ -39,7 +39,7 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-3">Contact</h4>
             <ul className="space-y-2 text-gray-400 text-sm">
-              <li>Email: support@jobportal.com</li>
+              <li>Email: support@jobify.com</li>
               <li>Phone: (555) 123-4567</li>
               <li>Address: Silicon Valley, CA</li>
             </ul>
@@ -48,7 +48,7 @@ const Footer = () => {
 
         {/* Copyright */}
         <div className="border-t border-gray-800 mt-8 pt-6 text-center text-gray-400 text-sm">
-          <p>&copy; {currentYear} JobPortal. All rights reserved.</p>
+          <p>&copy; {currentYear} Jobify. All rights reserved.</p>
         </div>
       </div>
     </footer>
