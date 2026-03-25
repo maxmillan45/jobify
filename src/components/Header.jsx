@@ -10,21 +10,17 @@ import {
   MessageCircle,
   ChevronDown,
   Search,
-  Moon,
-  Sun,
   Settings,
   HelpCircle,
   Sparkles,
   TrendingUp,
-  Shield,
-  Award
+  Shield
 } from 'lucide-react'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   
   // Mock user data - replace with actual auth state later
@@ -40,15 +36,6 @@ const Header = () => {
     { id: 2, text: "New job matches your profile: Backend Developer", time: "1 hour ago", unread: true },
     { id: 3, text: "Tech Corp posted a new job", time: "3 hours ago", unread: false }
   ]
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode)
-    if (!isDarkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }
 
   return (
     <header className="bg-slate-900 text-white shadow-xl sticky top-0 z-50">
@@ -68,12 +55,6 @@ const Header = () => {
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <button 
-                onClick={toggleDarkMode}
-                className="text-gray-300 hover:text-white transition"
-              >
-                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
               <a href="/help" className="text-gray-300 hover:text-white hidden md:inline transition">
                 Help Center
               </a>
@@ -168,19 +149,19 @@ const Header = () => {
                     </button>
 
                     {isNotificationsOpen && (
-                      <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
-                        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
+                      <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                        <div className="p-3 border-b border-gray-200">
+                          <h3 className="font-semibold text-gray-900">Notifications</h3>
                         </div>
                         <div className="max-h-96 overflow-y-auto">
                           {notifications.map(notif => (
-                            <div key={notif.id} className={`p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${notif.unread ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
-                              <p className="text-sm text-gray-900 dark:text-white">{notif.text}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notif.time}</p>
+                            <div key={notif.id} className={`p-3 hover:bg-gray-50 cursor-pointer ${notif.unread ? 'bg-blue-50' : ''}`}>
+                              <p className="text-sm text-gray-900">{notif.text}</p>
+                              <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
                             </div>
                           ))}
                         </div>
-                        <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+                        <div className="p-3 border-t border-gray-200">
                           <a href="/notifications" className="text-sm text-blue-600 hover:text-blue-700">View all notifications</a>
                         </div>
                       </div>
@@ -205,30 +186,30 @@ const Header = () => {
                     </button>
 
                     {isProfileOpen && (
-                      <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
-                        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-                          <p className="font-semibold text-gray-900 dark:text-white">{user.name}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{user.role}</p>
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                        <div className="p-4 border-b border-gray-200 bg-gray-50">
+                          <p className="font-semibold text-gray-900">{user.name}</p>
+                          <p className="text-sm text-gray-500">{user.role}</p>
                         </div>
                         <div className="py-2">
-                          <a href="/profile" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                          <a href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <User className="h-4 w-4 inline mr-2" /> My Profile
                           </a>
-                          <a href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                          <a href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <Briefcase className="h-4 w-4 inline mr-2" /> Dashboard
                           </a>
-                          <a href="/saved-jobs" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                          <a href="/saved-jobs" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <Bookmark className="h-4 w-4 inline mr-2" /> Saved Jobs
                           </a>
-                          <a href="/settings" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                          <a href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <Settings className="h-4 w-4 inline mr-2" /> Settings
                           </a>
-                          <a href="/help" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                          <a href="/help" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <HelpCircle className="h-4 w-4 inline mr-2" /> Help Center
                           </a>
                         </div>
-                        <div className="border-t border-gray-200 dark:border-gray-700 py-2">
-                          <button className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <div className="border-t border-gray-200 py-2">
+                          <button className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
                             <LogOut className="h-4 w-4 inline mr-2" /> Sign Out
                           </button>
                         </div>

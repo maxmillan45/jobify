@@ -10,7 +10,7 @@ const JobList = () => {
       location: "Remote",
       type: "Full-time",
       salary: "$80,000 - $100,000",
-      description: "We're looking for a React developer to join our team. You'll be building amazing user interfaces."
+      description: "We're looking for a React developer to join our team."
     },
     {
       id: 2,
@@ -19,7 +19,7 @@ const JobList = () => {
       location: "New York",
       type: "Full-time",
       salary: "$90,000 - $110,000",
-      description: "Looking for a Node.js expert to build scalable APIs."
+      description: "Looking for a Node.js expert to build APIs."
     },
     {
       id: 3,
@@ -34,12 +34,8 @@ const JobList = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Find Your Dream Job</h1>
-        <p className="text-gray-600">Browse through thousands of job opportunities</p>
-      </div>
-      
-      <div className="grid gap-6">
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">Find Your Dream Job</h1>
+      <div className="space-y-4">
         {jobs.map(job => (
           <JobCard key={job.id} job={job} />
         ))}

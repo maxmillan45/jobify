@@ -7,7 +7,7 @@ const JobCard = ({ job }) => {
       <div className="flex flex-wrap gap-4 mb-4">
         <span className="text-sm text-gray-500"> {job.location}</span>
         <span className="text-sm text-gray-500">{job.type}</span>
-        <span className="text-sm text-green-600 font-semibold">{job.salary}</span>
+        <span className="text-sm text-green-600 font-semibold"> {job.salary}</span>
       </div>
       
       <p className="text-gray-600 mb-4">{job.description}</p>
