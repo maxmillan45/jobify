@@ -25,18 +25,15 @@ const Dashboard = () => {
   const [savedJobs, setSavedJobs] = useState([])
 
   useEffect(() => {
-    // Simulate fetching user data
-    setTimeout(() => {
-      // Mock user data
-      setUser({
-        name: "John Doe",
-        email: "john@example.com",
-        role: "seeker",
-        joinedDate: "2024-01-15",
-        title: "Frontend Developer"
-      })
+    // Get user data from localStorage
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
+    }
 
-      // Mock stats
+    // Simulate fetching dashboard data
+    setTimeout(() => {
       setStats({
         applications: 8,
         savedJobs: 5,
@@ -44,10 +41,10 @@ const Dashboard = () => {
         profileViews: 45
       })
 
-      // Mock recent applications
       setRecentApplications([
         {
           id: 1,
+          jobId: 1,
           jobTitle: "Senior Frontend Developer",
           company: "Tech Corp",
           appliedDate: "2024-01-20",
@@ -56,6 +53,7 @@ const Dashboard = () => {
         },
         {
           id: 2,
+          jobId: 2,
           jobTitle: "React Developer",
           company: "Software Inc",
           appliedDate: "2024-01-18",
@@ -64,23 +62,15 @@ const Dashboard = () => {
         },
         {
           id: 3,
+          jobId: 3,
           jobTitle: "Full Stack Developer",
           company: "Digital Solutions",
           appliedDate: "2024-01-15",
           status: "interview",
           location: "Remote"
-        },
-        {
-          id: 4,
-          jobTitle: "UI Developer",
-          company: "Creative Studio",
-          appliedDate: "2024-01-10",
-          status: "rejected",
-          location: "Los Angeles"
         }
       ])
 
-      // Mock saved jobs
       setSavedJobs([
         {
           id: 1,
@@ -142,17 +132,20 @@ const Dashboard = () => {
     <div className="container mx-auto px-4 py-8">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-8 mb-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.name}!</h1>
+        <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.name || 'User'}!</h1>
         <p className="text-gray-300">
-          {user?.role === 'seeker' 
-            ? 'Track your job applications and find your next opportunity.'
-            : 'Manage your job postings and find the perfect candidates.'}
+          {user?.role === 'employer' 
+            ? 'Manage your job postings and find the perfect candidates.'
+            : 'Track your job applications and find your next opportunity.'}
+        </p>
+        <p className="text-sm text-gray-400 mt-2">
+          Email: {user?.email}
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <Link to="/applications" className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm">Applications Sent</p>
@@ -162,9 +155,9 @@ const Dashboard = () => {
               <FileText className="h-6 w-6 text-blue-600" />
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <Link to="/saved-jobs" className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm">Saved Jobs</p>
@@ -174,9 +167,9 @@ const Dashboard = () => {
               <Bookmark className="h-6 w-6 text-green-600" />
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <Link to="/applications?filter=interview" className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm">Interviews</p>
@@ -186,9 +179,9 @@ const Dashboard = () => {
               <TrendingUp className="h-6 w-6 text-purple-600" />
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <Link to="/profile" className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm">Profile Views</p>
@@ -198,7 +191,7 @@ const Dashboard = () => {
               <User className="h-6 w-6 text-orange-600" />
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -226,7 +219,9 @@ const Dashboard = () => {
                   <div key={app.id} className="border border-gray-100 rounded-lg p-4 hover:shadow-md transition">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{app.jobTitle}</h3>
+                        <Link to={`/jobs/${app.jobId}`}>
+                          <h3 className="font-semibold text-gray-900 hover:text-yellow-600">{app.jobTitle}</h3>
+                        </Link>
                         <p className="text-sm text-gray-600 mt-1">{app.company}</p>
                         <div className="flex items-center gap-3 mt-2">
                           <span className="text-xs text-gray-500">{app.location}</span>
@@ -267,7 +262,9 @@ const Dashboard = () => {
                 <div key={job.id} className="border border-gray-100 rounded-lg p-4 hover:shadow-md transition">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{job.title}</h3>
+                      <Link to={`/jobs/${job.id}`}>
+                        <h3 className="font-semibold text-gray-900 hover:text-yellow-600">{job.title}</h3>
+                      </Link>
                       <p className="text-sm text-gray-600 mt-1">{job.company}</p>
                       <div className="flex flex-wrap gap-3 mt-2">
                         <span className="text-xs text-gray-500">{job.location}</span>
@@ -294,7 +291,7 @@ const Dashboard = () => {
         <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link
-            to="/jobs"
+            to="/"
             className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-gray-200"
           >
             <Briefcase className="h-5 w-5 text-yellow-600" />

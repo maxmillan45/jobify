@@ -22,7 +22,6 @@ const Register = () => {
       ...formData,
       [name]: value
     })
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -74,9 +73,19 @@ const Register = () => {
     
     // Simulate API call
     setTimeout(() => {
-      console.log('Registration attempt:', formData)
+      // Store user info in localStorage
+      const user = {
+        id: Date.now(),
+        name: formData.name,
+        email: formData.email,
+        role: formData.role
+      }
+      localStorage.setItem('user', JSON.stringify(user))
+      localStorage.setItem('isLoggedIn', 'true')
+      
       setIsLoading(false)
-      navigate('/')
+      // Redirect to dashboard after successful registration
+      navigate('/dashboard')
     }, 1500)
   }
 
@@ -89,7 +98,6 @@ const Register = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Name Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Full Name
@@ -112,7 +120,6 @@ const Register = () => {
             )}
           </div>
 
-          {/* Email Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email Address
@@ -135,7 +142,6 @@ const Register = () => {
             )}
           </div>
 
-          {/* Password Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Password
@@ -165,7 +171,6 @@ const Register = () => {
             )}
           </div>
 
-          {/* Confirm Password Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Confirm Password
@@ -195,7 +200,6 @@ const Register = () => {
             )}
           </div>
 
-          {/* Role Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               I am a
@@ -236,7 +240,6 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
@@ -246,7 +249,6 @@ const Register = () => {
           </button>
         </form>
 
-        {/* Login Link */}
         <div className="mt-6 text-center">
           <p className="text-gray-600">
             Already have an account?{' '}

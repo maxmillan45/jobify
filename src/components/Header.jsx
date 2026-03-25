@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { 
   Briefcase, 
   User, 
@@ -67,8 +68,8 @@ const Header = () => {
         {/* Main Header */}
         <div className="py-4">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center space-x-2 group cursor-pointer">
+            {/* Logo - Clickable Link to Home */}
+            <Link to="/" className="flex items-center space-x-2 group cursor-pointer">
               <div className="relative">
                 <Briefcase className="h-8 w-8 text-yellow-400 group-hover:scale-110 transition-transform" />
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -79,7 +80,7 @@ const Header = () => {
                 </span>
                 <span className="text-xs text-gray-400 block">Your Career Starts Here</span>
               </div>
-            </div>
+            </Link>
 
             {/* Search Bar - Desktop */}
             <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
@@ -97,10 +98,10 @@ const Header = () => {
 
             {/* Navigation Links - Desktop */}
             <div className="hidden md:flex items-center space-x-6">
-              <a href="/jobs" className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
+              <Link to="/jobs" className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
                 Jobs
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></span>
-              </a>
+              </Link>
               <a href="/companies" className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
                 Companies
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></span>
@@ -191,18 +192,18 @@ const Header = () => {
                           <p className="text-sm text-gray-500">{user.role}</p>
                         </div>
                         <div className="py-2">
-                          <a href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <User className="h-4 w-4 inline mr-2" /> My Profile
-                          </a>
-                          <a href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          </Link>
+                          <Link to="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <Briefcase className="h-4 w-4 inline mr-2" /> Dashboard
-                          </a>
-                          <a href="/saved-jobs" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          </Link>
+                          <Link to="/saved-jobs" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <Bookmark className="h-4 w-4 inline mr-2" /> Saved Jobs
-                          </a>
-                          <a href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          </Link>
+                          <Link to="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <Settings className="h-4 w-4 inline mr-2" /> Settings
-                          </a>
+                          </Link>
                           <a href="/help" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <HelpCircle className="h-4 w-4 inline mr-2" /> Help Center
                           </a>
@@ -218,12 +219,12 @@ const Header = () => {
                 </>
               ) : (
                 <>
-                  <a href="/login" className="px-5 py-2 text-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-400/10 transition font-medium">
+                  <Link to="/login" className="px-5 py-2 text-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-400/10 transition font-medium">
                     Sign In
-                  </a>
-                  <a href="/register" className="px-5 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500 transition font-medium">
+                  </Link>
+                  <Link to="/register" className="px-5 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500 transition font-medium">
                     Sign Up
-                  </a>
+                  </Link>
                 </>
               )}
             </div>
@@ -254,19 +255,19 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-white/10">
             <div className="flex flex-col space-y-3">
-              <a href="/jobs" className="text-gray-200 hover:text-yellow-400 py-2 transition">Jobs</a>
+              <Link to="/jobs" className="text-gray-200 hover:text-yellow-400 py-2 transition">Jobs</Link>
               <a href="/companies" className="text-gray-200 hover:text-yellow-400 py-2 transition">Companies</a>
               <a href="/salaries" className="text-gray-200 hover:text-yellow-400 py-2 transition">Salaries</a>
               <a href="/career" className="text-gray-200 hover:text-yellow-400 py-2 transition">Career Advice</a>
               
               {!isLoggedIn && (
                 <div className="flex flex-col space-y-3 pt-3 border-t border-white/10">
-                  <a href="/login" className="text-center px-4 py-2 text-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-400/10 transition">
+                  <Link to="/login" className="text-center px-4 py-2 text-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-400/10 transition">
                     Sign In
-                  </a>
-                  <a href="/register" className="text-center px-4 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500 transition">
+                  </Link>
+                  <Link to="/register" className="text-center px-4 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500 transition">
                     Sign Up
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>
