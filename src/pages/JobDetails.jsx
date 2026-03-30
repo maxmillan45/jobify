@@ -1,318 +1,305 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+// src/pages/JobDetails.jsx
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { mockJobs } from '../data/mockJobs';
 import { 
-  MapPin, 
-  Briefcase, 
-  DollarSign, 
-  Calendar, 
-  Building, 
-  Users, 
-  Clock,
-  Bookmark,
-  Share2,
-  CheckCircle,
-  ArrowLeft
-} from 'lucide-react'
+  Briefcase, MapPin, Clock, DollarSign, Calendar, 
+  CheckCircle, X, Bookmark, Users, Award, Code
+} from 'lucide-react';
 
 const JobDetails = () => {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const [job, setJob] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [isSaved, setIsSaved] = useState(false)
-  const [showApplyForm, setShowApplyForm] = useState(false)
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [job, setJob] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [coverLetter, setCoverLetter] = useState('');
+  const [applicationSubmitted, setApplicationSubmitted] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  
+  const user = JSON.parse(localStorage.getItem('user'));
 
-  // Mock job data - In real app, fetch from API
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockJob = {
-        id: parseInt(id),
-        title: "Senior Frontend Developer",
-        company: "Tech Corp",
-        location: "Remote",
-        type: "Full-time",
-        salary: "$100,000 - $130,000",
-        experience: "5+ years",
-        postedAt: "2024-01-15",
-        description: "We're looking for an experienced Frontend Developer to join our growing team. You'll be working with React, TypeScript, and modern web technologies to build amazing user experiences. You will collaborate with designers, product managers, and backend engineers to create responsive and performant applications.",
-        requirements: [
-          "5+ years of frontend development experience",
-          "Expert in React and modern JavaScript (ES6+)",
-          "Experience with TypeScript",
-          "Strong CSS and responsive design skills",
-          "Experience with state management (Redux/Zustand)",
-          "Excellent problem-solving abilities"
-        ],
-        benefits: [
-          "Competitive salary and equity package",
-          "Health, dental, and vision insurance",
-          "Flexible working hours",
-          "Remote work options",
-          "Professional development budget ($2000/year)",
-          "Paid time off and holidays",
-          "401(k) matching"
-        ],
-        companyInfo: {
-          name: "Tech Corp",
-          website: "https://techcorp.com",
-          size: "200-500 employees",
-          founded: "2015",
-          description: "Tech Corp is a leading technology company dedicated to building innovative solutions that make a difference. We're a team of passionate individuals who believe in collaboration, continuous learning, and delivering exceptional value to our customers."
-        }
-      }
-      setJob(mockJob)
-      setLoading(false)
-    }, 1000)
-  }, [id])
+    // Load job
+    const foundJob = mockJobs.find(j => j.id === parseInt(id));
+    if (foundJob) {
+      setJob(foundJob);
+    }
+    setLoading(false);
+
+    // Check if job is saved
+    const savedJobs = JSON.parse(localStorage.getItem('savedJobs') || '[]');
+    setIsSaved(savedJobs.some(j => j.id === parseInt(id)));
+
+    // Check if already applied
+    const applications = JSON.parse(localStorage.getItem('applications') || '[]');
+    const hasAppliedJob = applications.some(app => app.jobId === parseInt(id) && app.applicantId === user?.id);
+    setHasApplied(hasAppliedJob);
+
+    // Check if we should show apply modal from navigation state
+    if (location.state?.showApply && !hasAppliedJob) {
+      setShowApplyModal(true);
+    }
+  }, [id, user?.id, location.state]);
 
   const handleSaveJob = () => {
-    setIsSaved(!isSaved)
-    // In real app, save to backend
-  }
+    if (!user) {
+      navigate('/login');
+      return;
+    }
 
-  const handleShareJob = () => {
-    navigator.clipboard.writeText(window.location.href)
-    alert('Job link copied to clipboard!')
-  }
+    const savedJobs = JSON.parse(localStorage.getItem('savedJobs') || '[]');
+    if (isSaved) {
+      const updated = savedJobs.filter(j => j.id !== job.id);
+      localStorage.setItem('savedJobs', JSON.stringify(updated));
+      setIsSaved(false);
+      alert('Job removed from saved');
+    } else {
+      savedJobs.push(job);
+      localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+      setIsSaved(true);
+      alert('Job saved successfully!');
+    }
+  };
 
   const handleApply = () => {
-    setShowApplyForm(true)
-  }
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (user.userType !== 'employee') {
+      alert('Only job seekers can apply for jobs');
+      return;
+    }
+
+    if (hasApplied) {
+      alert('You have already applied for this job');
+      return;
+    }
+
+    setShowApplyModal(true);
+  };
+
+  const handleSubmitApplication = () => {
+    if (!coverLetter.trim()) {
+      alert('Please write a cover letter');
+      return;
+    }
+
+    // Get existing applications
+    const applications = JSON.parse(localStorage.getItem('applications') || '[]');
+    
+    // Create new application
+    const newApplication = {
+      id: Date.now(),
+      jobId: job.id,
+      jobTitle: job.title,
+      company: job.company,
+      applicantId: user.id,
+      applicantName: user.name,
+      coverLetter: coverLetter,
+      status: 'pending',
+      appliedAt: new Date().toISOString()
+    };
+    
+    applications.push(newApplication);
+    localStorage.setItem('applications', JSON.stringify(applications));
+    
+    setApplicationSubmitted(true);
+    setHasApplied(true);
+    
+    setTimeout(() => {
+      setShowApplyModal(false);
+      setApplicationSubmitted(false);
+      setCoverLetter('');
+    }, 2000);
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading job details...</p>
+        </div>
       </div>
-    )
+    );
   }
 
   if (!job) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Job Not Found</h2>
-        <p className="text-gray-600 mb-6">The job you're looking for doesn't exist.</p>
-        <Link to="/" className="bg-yellow-500 text-slate-900 px-6 py-2 rounded-lg hover:bg-yellow-600 transition">
-          Back to Jobs
-        </Link>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Briefcase className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-700 mb-2">Job Not Found</h2>
+          <p className="text-gray-500 mb-4">The job you're looking for doesn't exist.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-4 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500"
+          >
+            Back to Jobs
+          </button>
+        </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate('/')}
-        className="flex items-center text-gray-600 hover:text-yellow-500 mb-6 transition"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Jobs
-      </button>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-4xl">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="mb-6 text-gray-600 hover:text-yellow-600 transition flex items-center gap-2"
+        >
+          ← Back to Jobs
+        </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content - Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Job Header */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
-                <p className="text-xl text-gray-600">{job.company}</p>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleSaveJob}
-                  className={`p-2 rounded-lg transition ${
-                    isSaved 
-                      ? 'bg-yellow-500 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-yellow-500 hover:text-white'
-                  }`}
-                >
-                  <Bookmark className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={handleShareJob}
-                  className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-yellow-500 hover:text-white transition"
-                >
-                  <Share2 className="h-5 w-5" />
-                </button>
+        {/* Job Header */}
+        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
+              <p className="text-xl text-gray-600 mb-4">{job.company}</p>
+              <div className="flex flex-wrap gap-4 text-gray-500">
+                <span className="flex items-center">
+                  <MapPin className="h-5 w-5 mr-1" /> {job.location}
+                </span>
+                <span className="flex items-center">
+                  <Clock className="h-5 w-5 mr-1" /> {job.type}
+                </span>
+                <span className="flex items-center">
+                  <DollarSign className="h-5 w-5 mr-1" /> {job.salary}
+                </span>
+                <span className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-1" /> Posted {new Date(job.postedAt).toLocaleDateString()}
+                </span>
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-4 pb-4 border-b">
-              <div className="flex items-center text-gray-600">
-                <MapPin className="h-4 w-4 mr-2" />
-                <span>{job.location}</span>
-              </div>
-              <div className="flex items-center text-gray-600">
-                <Briefcase className="h-4 w-4 mr-2" />
-                <span>{job.type}</span>
-              </div>
-              <div className="flex items-center text-green-600 font-semibold">
-                <DollarSign className="h-4 w-4 mr-2" />
-                <span>{job.salary}</span>
-              </div>
-              <div className="flex items-center text-gray-600">
-                <Calendar className="h-4 w-4 mr-2" />
-                <span>Posted {job.postedAt}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Job Description */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Job Description</h2>
-            <p className="text-gray-700 leading-relaxed">{job.description}</p>
-          </div>
-
-          {/* Requirements */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Requirements</h2>
-            <ul className="list-disc list-inside space-y-2 text-gray-700">
-              {job.requirements.map((req, index) => (
-                <li key={index}>{req}</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Benefits */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Benefits</h2>
-            <ul className="list-disc list-inside space-y-2 text-gray-700">
-              {job.benefits.map((benefit, index) => (
-                <li key={index}>{benefit}</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company Info */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">About {job.company}</h2>
-            <div className="space-y-3">
-              <p className="text-gray-700">{job.companyInfo.description}</p>
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <div>
-                  <p className="text-sm text-gray-500">Company Size</p>
-                  <p className="font-semibold text-gray-900">{job.companyInfo.size}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Founded</p>
-                  <p className="font-semibold text-gray-900">{job.companyInfo.founded}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Website</p>
-                  <a href={job.companyInfo.website} target="_blank" rel="noopener noreferrer" className="text-yellow-600 hover:underline">
-                    {job.companyInfo.website}
-                  </a>
-                </div>
-              </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveJob}
+                className={`p-3 rounded-lg transition ${
+                  isSaved
+                    ? 'bg-yellow-100 text-yellow-600'
+                    : 'bg-gray-100 text-gray-600 hover:bg-yellow-100 hover:text-yellow-600'
+                }`}
+              >
+                <Bookmark className="h-5 w-5" fill={isSaved ? 'currentColor' : 'none'} />
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Sidebar - Right Column */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Job Overview</h3>
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <Building className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Company</p>
-                  <p className="font-medium text-gray-900">{job.company}</p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <MapPin className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Location</p>
-                  <p className="font-medium text-gray-900">{job.location}</p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <Briefcase className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Job Type</p>
-                  <p className="font-medium text-gray-900">{job.type}</p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <DollarSign className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Salary Range</p>
-                  <p className="font-medium text-gray-900">{job.salary}</p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <Users className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Experience Level</p>
-                  <p className="font-medium text-gray-900">{job.experience}</p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <Clock className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Posted Date</p>
-                  <p className="font-medium text-gray-900">{job.postedAt}</p>
-                </div>
-              </div>
-            </div>
+        {/* Job Details */}
+        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Job Description</h2>
+          <p className="text-gray-700 mb-6 leading-relaxed">{job.description}</p>
 
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Requirements</h2>
+          <ul className="space-y-2 mb-6">
+            {job.requirements.map((req, idx) => (
+              <li key={idx} className="flex items-start gap-2 text-gray-700">
+                <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>{req}</span>
+              </li>
+            ))}
+          </ul>
+
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Responsibilities</h2>
+          <ul className="space-y-2">
+            {job.responsibilities.map((resp, idx) => (
+              <li key={idx} className="flex items-start gap-2 text-gray-700">
+                <Code className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <span>{resp}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Apply Button */}
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          {hasApplied ? (
+            <div className="text-center py-4 bg-green-50 rounded-lg">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+              <h3 className="text-xl font-semibold text-green-700 mb-1">Application Submitted!</h3>
+              <p className="text-green-600">You have successfully applied for this position.</p>
+            </div>
+          ) : (
             <button
               onClick={handleApply}
-              className="w-full mt-6 bg-yellow-500 text-slate-900 py-3 rounded-lg hover:bg-yellow-600 transition font-semibold"
+              className="w-full py-4 bg-yellow-400 text-slate-900 rounded-lg font-semibold text-lg hover:bg-yellow-500 transition"
             >
               Apply Now
             </button>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Simple Apply Modal */}
-      {showApplyForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold mb-4">Apply for {job.title}</h2>
-            <p className="text-gray-600 mb-4">at {job.company}</p>
-            
-            <form className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Resume Link</label>
-                <input type="url" className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="https://..." />
+      {/* Apply Modal */}
+      {showApplyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Apply for {job.title}</h2>
+                <button
+                  onClick={() => setShowApplyModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
               </div>
               
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowApplyForm(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-yellow-500 text-slate-900 py-2 rounded-lg hover:bg-yellow-600"
-                >
-                  Submit Application
-                </button>
-              </div>
-            </form>
+              {applicationSubmitted ? (
+                <div className="text-center py-8">
+                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Application Submitted!</h3>
+                  <p className="text-gray-600">Your application has been sent successfully.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cover Letter
+                    </label>
+                    <textarea
+                      value={coverLetter}
+                      onChange={(e) => setCoverLetter(e.target.value)}
+                      rows={8}
+                      placeholder="Tell us why you're the perfect fit for this position..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
+                    ></textarea>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Briefly explain why you're interested and what makes you qualified.
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowApplyModal(false)}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmitApplication}
+                      className="flex-1 px-4 py-2 bg-yellow-400 text-slate-900 rounded-lg font-medium hover:bg-yellow-500 transition"
+                    >
+                      Submit Application
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default JobDetails
+export default JobDetails;

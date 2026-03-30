@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   Briefcase, 
   User, 
@@ -18,14 +18,16 @@ import {
 } from 'lucide-react'
 
 const Header = () => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   
-  // Mock user data - replace with actual auth state later
-  const isLoggedIn = false
-  const user = {
+  // Get user from localStorage
+  const storedUser = localStorage.getItem('user')
+  const isLoggedIn = storedUser !== null
+  const user = storedUser ? JSON.parse(storedUser) : {
     name: "John Doe",
     avatar: null,
     role: "Job Seeker"
@@ -36,6 +38,12 @@ const Header = () => {
     { id: 2, text: "New job matches your profile: Backend Developer", time: "1 hour ago", unread: true },
     { id: 3, text: "Tech Corp posted a new job", time: "3 hours ago", unread: false }
   ]
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setIsProfileOpen(false);
+    navigate('/login');
+  }
 
   return (
     <header className="bg-slate-900 text-white shadow-xl sticky top-0 z-50">
@@ -55,12 +63,12 @@ const Header = () => {
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <a href="/help" className="text-gray-300 hover:text-white hidden md:inline transition">
+              <button onClick={() => navigate('/help')} className="text-gray-300 hover:text-white hidden md:inline transition">
                 Help Center
-              </a>
-              <a href="/contact" className="text-gray-300 hover:text-white hidden md:inline transition">
+              </button>
+              <button onClick={() => navigate('/contact')} className="text-gray-300 hover:text-white hidden md:inline transition">
                 Contact
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -68,8 +76,8 @@ const Header = () => {
         {/* Main Header */}
         <div className="py-4">
           <div className="flex items-center justify-between">
-            {/* Logo - Clickable Link to Home */}
-            <Link to="/" className="flex items-center space-x-2 group cursor-pointer">
+            {/* Logo */}
+            <button onClick={() => navigate('/')} className="flex items-center space-x-2 group cursor-pointer">
               <div className="relative">
                 <Briefcase className="h-8 w-8 text-yellow-400 group-hover:scale-110 transition-transform" />
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -80,9 +88,9 @@ const Header = () => {
                 </span>
                 <span className="text-xs text-gray-400 block">Your Career Starts Here</span>
               </div>
-            </Link>
+            </button>
 
-            {/* Search Bar - Desktop */}
+            {/* Search Bar */}
             <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -96,47 +104,44 @@ const Header = () => {
               </div>
             </div>
 
-            {/* Navigation Links - Desktop */}
+            {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-6">
-              <Link to="/jobs" className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
+              <button onClick={() => navigate('/jobs')} className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
                 Jobs
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></span>
-              </Link>
-              <a href="/companies" className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
+              </button>
+              <button onClick={() => navigate('/companies')} className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
                 Companies
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></span>
-              </a>
-              <a href="/salaries" className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
+              </button>
+              <button onClick={() => navigate('/salaries')} className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
                 Salaries
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></span>
-              </a>
-              <a href="/career" className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
+              </button>
+              <button onClick={() => navigate('/career')} className="text-gray-200 hover:text-yellow-400 font-medium transition relative group">
                 Career Advice
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></span>
-              </a>
+              </button>
             </div>
 
-            {/* User Actions - Desktop */}
+            {/* User Actions */}
             <div className="hidden md:flex items-center space-x-4 ml-8">
               {isLoggedIn ? (
                 <>
-                  {/* Saved Jobs */}
-                  <button className="relative text-gray-200 hover:text-yellow-400 transition">
+                  <button onClick={() => navigate('/saved-jobs')} className="relative text-gray-200 hover:text-yellow-400 transition">
                     <Bookmark className="h-5 w-5" />
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                       3
                     </span>
                   </button>
 
-                  {/* Messages */}
-                  <button className="relative text-gray-200 hover:text-yellow-400 transition">
+                  <button onClick={() => navigate('/messages')} className="relative text-gray-200 hover:text-yellow-400 transition">
                     <MessageCircle className="h-5 w-5" />
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                       2
                     </span>
                   </button>
 
-                  {/* Notifications Dropdown */}
                   <div className="relative">
                     <button 
                       onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -162,13 +167,14 @@ const Header = () => {
                           ))}
                         </div>
                         <div className="p-3 border-t border-gray-200">
-                          <a href="/notifications" className="text-sm text-blue-600 hover:text-blue-700">View all notifications</a>
+                          <button onClick={() => navigate('/notifications')} className="text-sm text-blue-600 hover:text-blue-700">
+                            View all notifications
+                          </button>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Profile Dropdown */}
                   <div className="relative">
                     <button 
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -192,24 +198,27 @@ const Header = () => {
                           <p className="text-sm text-gray-500">{user.role}</p>
                         </div>
                         <div className="py-2">
-                          <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          <button onClick={() => { navigate('/profile'); setIsProfileOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <User className="h-4 w-4 inline mr-2" /> My Profile
-                          </Link>
-                          <Link to="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          </button>
+                          <button onClick={() => { navigate('/dashboard'); setIsProfileOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <Briefcase className="h-4 w-4 inline mr-2" /> Dashboard
-                          </Link>
-                          <Link to="/saved-jobs" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          </button>
+                          <button onClick={() => { navigate('/saved-jobs'); setIsProfileOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <Bookmark className="h-4 w-4 inline mr-2" /> Saved Jobs
-                          </Link>
-                          <Link to="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          </button>
+                          <button onClick={() => { navigate('/settings'); setIsProfileOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <Settings className="h-4 w-4 inline mr-2" /> Settings
-                          </Link>
-                          <a href="/help" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          </button>
+                          <button onClick={() => { navigate('/help'); setIsProfileOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <HelpCircle className="h-4 w-4 inline mr-2" /> Help Center
-                          </a>
+                          </button>
                         </div>
                         <div className="border-t border-gray-200 py-2">
-                          <button className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                          <button 
+                            onClick={handleLogout}
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                          >
                             <LogOut className="h-4 w-4 inline mr-2" /> Sign Out
                           </button>
                         </div>
@@ -219,12 +228,18 @@ const Header = () => {
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="px-5 py-2 text-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-400/10 transition font-medium">
+                  <button 
+                    onClick={() => navigate('/login')}
+                    className="px-5 py-2 text-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-400/10 transition font-medium"
+                  >
                     Sign In
-                  </Link>
-                  <Link to="/register" className="px-5 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500 transition font-medium">
+                  </button>
+                  <button 
+                    onClick={() => navigate('/register')}
+                    className="px-5 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500 transition font-medium"
+                  >
                     Sign Up
-                  </Link>
+                  </button>
                 </>
               )}
             </div>
@@ -238,7 +253,7 @@ const Header = () => {
             </button>
           </div>
 
-          {/* Mobile Search Bar */}
+          {/* Mobile Search */}
           <div className="lg:hidden mt-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -255,19 +270,33 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-white/10">
             <div className="flex flex-col space-y-3">
-              <Link to="/jobs" className="text-gray-200 hover:text-yellow-400 py-2 transition">Jobs</Link>
-              <a href="/companies" className="text-gray-200 hover:text-yellow-400 py-2 transition">Companies</a>
-              <a href="/salaries" className="text-gray-200 hover:text-yellow-400 py-2 transition">Salaries</a>
-              <a href="/career" className="text-gray-200 hover:text-yellow-400 py-2 transition">Career Advice</a>
+              <button onClick={() => { navigate('/jobs'); setIsMenuOpen(false); }} className="text-gray-200 hover:text-yellow-400 py-2 text-left transition">
+                Jobs
+              </button>
+              <button onClick={() => { navigate('/companies'); setIsMenuOpen(false); }} className="text-gray-200 hover:text-yellow-400 py-2 text-left transition">
+                Companies
+              </button>
+              <button onClick={() => { navigate('/salaries'); setIsMenuOpen(false); }} className="text-gray-200 hover:text-yellow-400 py-2 text-left transition">
+                Salaries
+              </button>
+              <button onClick={() => { navigate('/career'); setIsMenuOpen(false); }} className="text-gray-200 hover:text-yellow-400 py-2 text-left transition">
+                Career Advice
+              </button>
               
               {!isLoggedIn && (
                 <div className="flex flex-col space-y-3 pt-3 border-t border-white/10">
-                  <Link to="/login" className="text-center px-4 py-2 text-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-400/10 transition">
+                  <button 
+                    onClick={() => { navigate('/login'); setIsMenuOpen(false); }}
+                    className="text-center px-4 py-2 text-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-400/10 transition"
+                  >
                     Sign In
-                  </Link>
-                  <Link to="/register" className="text-center px-4 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500 transition">
+                  </button>
+                  <button 
+                    onClick={() => { navigate('/register'); setIsMenuOpen(false); }}
+                    className="text-center px-4 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500 transition"
+                  >
                     Sign Up
-                  </Link>
+                  </button>
                 </div>
               )}
             </div>

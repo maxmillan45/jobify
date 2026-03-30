@@ -1,265 +1,256 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { User, Mail, Lock, Eye, EyeOff, Briefcase } from 'lucide-react'
+// pages/Register.jsx
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Register = () => {
-  const navigate = useNavigate()
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate();
+  const [userType, setUserType] = useState('employee');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'seeker'
-  })
-  const [errors, setErrors] = useState({})
+    companyName: '',
+    position: '',
+  });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
-    })
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: ''
-      })
-    }
-  }
-
-  const validateForm = () => {
-    const newErrors = {}
-    
-    if (!formData.name) {
-      newErrors.name = 'Full name is required'
-    } else if (formData.name.length < 2) {
-      newErrors.name = 'Name must be at least 2 characters'
-    }
-    
-    if (!formData.email) {
-      newErrors.email = 'Email is required'
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address'
-    }
-    
-    if (!formData.password) {
-      newErrors.password = 'Password is required'
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
-    }
-    
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password'
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match'
-    }
-    
-    return newErrors
-  }
+      [name]: value,
+    });
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    const newErrors = validateForm()
-    
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    if (!formData.name || !formData.email || !formData.password) {
+      setError('Please fill in all required fields');
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      // Store user info in localStorage
-      const user = {
-        id: Date.now(),
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setIsLoading(false);
+      return;
+    }
+
+    if (userType === 'employer' && !formData.companyName) {
+      setError('Please enter your company name');
+      setIsLoading(false);
+      return;
+    }
+
+    if (userType === 'employee' && !formData.position) {
+      setError('Please enter your current position');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      console.log('Registering as:', userType);
+      console.log('Form data:', formData);
+      
+      localStorage.setItem('user', JSON.stringify({
         name: formData.name,
         email: formData.email,
-        role: formData.role
-      }
-      localStorage.setItem('user', JSON.stringify(user))
-      localStorage.setItem('isLoggedIn', 'true')
+        userType: userType,
+        companyName: formData.companyName,
+        position: formData.position,
+        role: userType === 'employer' ? 'Employer' : 'Job Seeker',
+        isAuthenticated: true,
+        registeredAt: new Date().toISOString()
+      }));
       
-      setIsLoading(false)
-      // Redirect to dashboard after successful registration
-      navigate('/dashboard')
-    }, 1500)
-  }
+      navigate('/dashboard');
+      
+    } catch (err) {
+      setError('Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="bg-white rounded-2xl p-8 sm:p-10 w-full max-w-md shadow-xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Join Jobify to start your career journey</p>
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">
+            Create an Account
+          </h2>
+          <p className="text-gray-600 text-sm">
+            Join Jobify to start your journey
+          </p>
         </div>
 
+        {/* Role Selection Toggle */}
+        <div className="flex gap-3 mb-8 bg-gray-100 p-1 rounded-xl">
+          <button
+            type="button"
+            className={`flex-1 py-3 rounded-lg font-medium transition-all duration-200 ${
+              userType === 'employee'
+                ? 'bg-white text-yellow-600 shadow-sm border border-yellow-200'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+            }`}
+            onClick={() => setUserType('employee')}
+          >
+            Job Seeker
+          </button>
+          <button
+            type="button"
+            className={`flex-1 py-3 rounded-lg font-medium transition-all duration-200 ${
+              userType === 'employer'
+                ? 'bg-white text-yellow-600 shadow-sm border border-yellow-200'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+            }`}
+            onClick={() => setUserType('employer')}
+          >
+            Employer
+          </button>
+        </div>
+
+        {/* Registration Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name *
             </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Enter your full name"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address *
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="Enter your email"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
+              required
+            />
+          </div>
+
+          {/* Employee-specific field */}
+          {userType === 'employee' && (
+            <div>
+              <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-2">
+                Current Position *
+              </label>
               <input
                 type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="John Doe"
+                id="position"
+                name="position"
+                value={formData.position}
+                onChange={handleInputChange}
+                placeholder="e.g., Frontend Developer, Software Engineer"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
+                required
               />
             </div>
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-            )}
-          </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="you@example.com"
-              />
-            </div>
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
-                  errors.password ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Create a password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Confirm Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Confirm your password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              I am a
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition ${
-                formData.role === 'seeker' 
-                  ? 'border-yellow-500 bg-yellow-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}>
-                <input
-                  type="radio"
-                  name="role"
-                  value="seeker"
-                  checked={formData.role === 'seeker'}
-                  onChange={handleChange}
-                  className="hidden"
-                />
-                <User className="h-4 w-4 mr-2" />
-                <span className="text-sm">Job Seeker</span>
+          {/* Employer-specific field */}
+          {userType === 'employer' && (
+            <div>
+              <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+                Company Name *
               </label>
-              <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition ${
-                formData.role === 'employer' 
-                  ? 'border-yellow-500 bg-yellow-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}>
-                <input
-                  type="radio"
-                  name="role"
-                  value="employer"
-                  checked={formData.role === 'employer'}
-                  onChange={handleChange}
-                  className="hidden"
-                />
-                <Briefcase className="h-4 w-4 mr-2" />
-                <span className="text-sm">Employer</span>
-              </label>
+              <input
+                type="text"
+                id="companyName"
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleInputChange}
+                placeholder="Enter your company name"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
+                required
+              />
             </div>
+          )}
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              Password *
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              placeholder="Create a password (min. 6 characters)"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
+              required
+            />
           </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password *
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              placeholder="Confirm your password"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center">
+              {error}
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-yellow-500 text-slate-900 py-2 rounded-lg font-semibold hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+            className="w-full bg-yellow-400 text-slate-900 py-3 rounded-lg font-semibold transition-all hover:bg-yellow-500 hover:transform hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
+            {isLoading ? 'Creating Account...' : `Sign up as ${userType === 'employee' ? 'Job Seeker' : 'Employer'}`}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p>
             Already have an account?{' '}
-            <Link to="/login" className="text-yellow-600 hover:text-yellow-700 font-medium">
-              Sign in here
+            <Link to="/login" className="text-yellow-600 font-medium hover:underline">
+              Sign in
             </Link>
           </p>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;

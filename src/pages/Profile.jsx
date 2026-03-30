@@ -18,21 +18,35 @@ const Profile = () => {
   const [editing, setEditing] = useState(false)
 
   useEffect(() => {
-    // Simulate fetching profile data
-    setTimeout(() => {
-      setProfile({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '+1 (555) 123-4567',
-        location: 'San Francisco, CA',
-        title: 'Frontend Developer',
-        bio: 'Passionate frontend developer with 5+ years of experience building responsive web applications. Specialized in React and modern JavaScript frameworks.',
-        skills: 'React, JavaScript, TypeScript, Tailwind CSS, Redux, Git',
-        experience: '5 years',
-        education: 'Bachelor of Science in Computer Science'
-      })
-      setLoading(false)
-    }, 1000)
+    // Get user data from localStorage
+    const userData = localStorage.getItem('user')
+    
+    // Get saved profile data from localStorage (if exists)
+    const savedProfile = localStorage.getItem('userProfile')
+    
+    if (userData) {
+      const user = JSON.parse(userData)
+      
+      if (savedProfile) {
+        // Use saved profile data
+        const profileData = JSON.parse(savedProfile)
+        setProfile(profileData)
+      } else {
+        // Use user data from login/registration
+        setProfile({
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          location: user.location || '',
+          title: user.title || '',
+          bio: user.bio || '',
+          skills: user.skills || '',
+          experience: user.experience || '',
+          education: user.education || ''
+        })
+      }
+    }
+    setLoading(false)
   }, [])
 
   const handleChange = (e) => {
@@ -45,12 +59,31 @@ const Profile = () => {
 
   const handleSave = () => {
     setSaving(true)
-    // Simulate API call
+    
+    // Save profile to localStorage
     setTimeout(() => {
+      localStorage.setItem('userProfile', JSON.stringify(profile))
+      
+      // Also update the user data in localStorage
+      const userData = localStorage.getItem('user')
+      if (userData) {
+        const user = JSON.parse(userData)
+        user.name = profile.name
+        user.email = profile.email
+        user.phone = profile.phone
+        user.location = profile.location
+        user.title = profile.title
+        user.bio = profile.bio
+        user.skills = profile.skills
+        user.experience = profile.experience
+        user.education = profile.education
+        localStorage.setItem('user', JSON.stringify(user))
+      }
+      
       setSaving(false)
       setEditing(false)
       alert('Profile saved successfully!')
-    }, 1000)
+    }, 500)
   }
 
   if (loading) {
@@ -82,8 +115,8 @@ const Profile = () => {
                 )}
               </div>
               <div className="md:ml-6 mt-4 md:mt-0 text-center md:text-left flex-1">
-                <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
-                <p className="text-gray-600">{profile.title}</p>
+                <h1 className="text-2xl font-bold text-gray-900">{profile.name || 'User'}</h1>
+                <p className="text-gray-600">{profile.title || 'Job Seeker'}</p>
               </div>
               {!editing ? (
                 <button
@@ -128,7 +161,7 @@ const Profile = () => {
                   ) : (
                     <div className="flex items-center text-gray-900">
                       <User className="h-5 w-5 text-gray-400 mr-2" />
-                      {profile.name}
+                      {profile.name || 'Not provided'}
                     </div>
                   )}
                 </div>
@@ -146,7 +179,7 @@ const Profile = () => {
                   ) : (
                     <div className="flex items-center text-gray-900">
                       <Mail className="h-5 w-5 text-gray-400 mr-2" />
-                      {profile.email}
+                      {profile.email || 'Not provided'}
                     </div>
                   )}
                 </div>
@@ -164,7 +197,7 @@ const Profile = () => {
                   ) : (
                     <div className="flex items-center text-gray-900">
                       <Phone className="h-5 w-5 text-gray-400 mr-2" />
-                      {profile.phone}
+                      {profile.phone || 'Not provided'}
                     </div>
                   )}
                 </div>
@@ -182,7 +215,7 @@ const Profile = () => {
                   ) : (
                     <div className="flex items-center text-gray-900">
                       <MapPin className="h-5 w-5 text-gray-400 mr-2" />
-                      {profile.location}
+                      {profile.location || 'Not provided'}
                     </div>
                   )}
                 </div>
@@ -200,7 +233,7 @@ const Profile = () => {
                   ) : (
                     <div className="flex items-center text-gray-900">
                       <Briefcase className="h-5 w-5 text-gray-400 mr-2" />
-                      {profile.title}
+                      {profile.title || 'Not provided'}
                     </div>
                   )}
                 </div>
@@ -217,9 +250,12 @@ const Profile = () => {
                       onChange={handleChange}
                       rows="4"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      placeholder="Tell us about yourself..."
                     />
                   ) : (
-                    <p className="text-gray-900 leading-relaxed">{profile.bio}</p>
+                    <p className="text-gray-900 leading-relaxed">
+                      {profile.bio || 'No bio provided yet.'}
+                    </p>
                   )}
                 </div>
 
@@ -232,15 +268,19 @@ const Profile = () => {
                       onChange={handleChange}
                       rows="3"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                      placeholder="React, JavaScript, etc."
+                      placeholder="React, JavaScript, Python, etc. (comma separated)"
                     />
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      {profile.skills.split(',').map((skill, index) => (
-                        <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                          {skill.trim()}
-                        </span>
-                      ))}
+                      {profile.skills ? (
+                        profile.skills.split(',').map((skill, index) => (
+                          <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                            {skill.trim()}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">No skills added yet</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -254,9 +294,10 @@ const Profile = () => {
                       value={profile.experience}
                       onChange={handleChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      placeholder="e.g., 3 years"
                     />
                   ) : (
-                    <p className="text-gray-900">{profile.experience}</p>
+                    <p className="text-gray-900">{profile.experience || 'Not provided'}</p>
                   )}
                 </div>
 
@@ -269,9 +310,10 @@ const Profile = () => {
                       onChange={handleChange}
                       rows="2"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      placeholder="Bachelor of Science in Computer Science, University Name, 2020"
                     />
                   ) : (
-                    <p className="text-gray-900">{profile.education}</p>
+                    <p className="text-gray-900">{profile.education || 'Not provided'}</p>
                   )}
                 </div>
               </div>
