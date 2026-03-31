@@ -1,8 +1,8 @@
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import JobList from './pages/JobList'
-import Jobs from './pages/Jobs'
 import JobDetails from './pages/JobDetails'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -22,8 +22,9 @@ function App() {
         <Header />
         <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<Jobs />} />
-            <Route path="/jobs" element={<Jobs />} />
+            {/* Use JobList instead of Jobs */}
+            <Route path="/" element={<JobList />} />
+            <Route path="/jobs" element={<JobList />} />
             <Route path="/jobs/:id" element={<JobDetails />} />
             <Route path="/companies" element={<Companies />} />
             <Route path="/salaries" element={<Salaries />} />
