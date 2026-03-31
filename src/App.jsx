@@ -16,6 +16,7 @@ import Salaries from './pages/Salaries'
 import CareerAdvice from './pages/CareerAdvice'
 import HelpCenter from './pages/HelpCenter'
 import Contact from './pages/Contact'
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
             <Route path="/help/*" element={<HelpCenter />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/contact/*" element={<Contact />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
         <Footer />
