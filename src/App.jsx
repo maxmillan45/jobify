@@ -19,6 +19,9 @@ import Contact from './pages/Contact';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
+import PostJob from './pages/PostJob';
+import BrowseCandidates from './pages/BrowseCandidates';
+import Pricing from './pages/Pricing';
 
 function App() {
   return (
@@ -46,6 +49,9 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/post-job" element={<PostJob />} />
+            <Route path="/candidates" element={<BrowseCandidates />} />
+            <Route path="/pricing" element={<Pricing />} />
           </Routes>
         </main>
         <Footer />
