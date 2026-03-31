@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { 
   Briefcase, 
   User, 
@@ -14,7 +14,14 @@ import {
   Settings,
   HelpCircle,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  Mail,
+  Phone,
+  MessageSquare,
+  FileText,
+  BookOpen,
+  Shield,
+  AlertCircle
 } from 'lucide-react'
 
 const Header = () => {
@@ -23,6 +30,8 @@ const Header = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isHelpOpen, setIsHelpOpen] = useState(false)
+  const [isContactOpen, setIsContactOpen] = useState(false)
   
   // Get user from localStorage
   const storedUser = localStorage.getItem('user')
@@ -38,6 +47,14 @@ const Header = () => {
     { id: 2, text: "New job matches your profile: Backend Developer", time: "1 hour ago", unread: true },
     { id: 3, text: "Tech Corp posted a new job", time: "3 hours ago", unread: false }
   ]
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/jobs?search=${encodeURIComponent(searchQuery)}`);
+      setSearchQuery('');
+    }
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -63,11 +80,22 @@ const Header = () => {
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <button onClick={() => navigate('/help')} className="text-gray-300 hover:text-white hidden md:inline transition">
-                Help Center
+              {/* Help Center Button */}
+              <button 
+                onClick={() => navigate('/help')} 
+                className="text-gray-300 hover:text-white transition flex items-center space-x-1"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span>Help Center</span>
               </button>
-              <button onClick={() => navigate('/contact')} className="text-gray-300 hover:text-white hidden md:inline transition">
-                Contact
+
+              {/* Contact Button */}
+              <button 
+                onClick={() => navigate('/contact')} 
+                className="text-gray-300 hover:text-white transition flex items-center space-x-1"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>Contact</span>
               </button>
             </div>
           </div>
@@ -92,7 +120,7 @@ const Header = () => {
 
             {/* Search Bar */}
             <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
-              <div className="relative w-full">
+              <form onSubmit={handleSearch} className="relative w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
                   type="text"
@@ -101,7 +129,10 @@ const Header = () => {
                   placeholder="Search jobs, companies, or keywords..."
                   className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-white placeholder-gray-400"
                 />
-              </div>
+                <button type="submit" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400">
+                  <Search className="h-5 w-5" />
+                </button>
+              </form>
             </div>
 
             {/* Navigation Links */}
@@ -255,14 +286,16 @@ const Header = () => {
 
           {/* Mobile Search */}
           <div className="lg:hidden mt-4">
-            <div className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search jobs..."
                 className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 text-white placeholder-gray-400"
               />
-            </div>
+            </form>
           </div>
         </div>
 
@@ -281,6 +314,12 @@ const Header = () => {
               </button>
               <button onClick={() => { navigate('/career'); setIsMenuOpen(false); }} className="text-gray-200 hover:text-yellow-400 py-2 text-left transition">
                 Career Advice
+              </button>
+              <button onClick={() => { navigate('/help'); setIsMenuOpen(false); }} className="text-gray-200 hover:text-yellow-400 py-2 text-left transition">
+                Help Center
+              </button>
+              <button onClick={() => { navigate('/contact'); setIsMenuOpen(false); }} className="text-gray-200 hover:text-yellow-400 py-2 text-left transition">
+                Contact
               </button>
               
               {!isLoggedIn && (
