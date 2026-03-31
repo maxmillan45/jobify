@@ -1,51 +1,256 @@
-// src/components/JobDetails.jsx
-import React from 'react';
-import { useParams } from 'react-router-dom';
-import { mockJobs } from '../data/mockJobs';
+// src/pages/JobDetails.jsx
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { 
+  MapPin, 
+  Briefcase, 
+  DollarSign, 
+  Calendar, 
+  CheckCircle,
+  Building2,
+  Users,
+  Clock,
+  ArrowLeft,
+  Bookmark,
+  Share2,
+  AlertCircle
+} from 'lucide-react';
+import { getJobById, applyForJob } from '../services/api';
 
 const JobDetails = () => {
   const { id } = useParams();
-  const job = mockJobs.find(job => job.id === parseInt(id));
+  const navigate = useNavigate();
+  const [job, setJob] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [applicationSuccess, setApplicationSuccess] = useState(false);
+  const [applicationError, setApplicationError] = useState('');
 
-  if (!job) {
-    return <div>Job not found</div>;
+  useEffect(() => {
+    fetchJob();
+  }, [id]);
+
+  const fetchJob = async () => {
+    try {
+      setLoading(true);
+      const result = await getJobById(id);
+      if (result.success && result.job) {
+        setJob(result.job);
+      } else {
+        setError('Job not found');
+      }
+    } catch (err) {
+      console.error('Error fetching job:', err);
+      setError('Failed to load job details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApply = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    setApplying(true);
+    setApplicationError('');
+
+    try {
+      const result = await applyForJob({
+        jobId: parseInt(id),
+        coverLetter: "I am very interested in this position and believe my skills align perfectly with your requirements."
+      });
+      
+      if (result.success) {
+        setApplicationSuccess(true);
+        setTimeout(() => {
+          setApplicationSuccess(false);
+        }, 5000);
+      }
+    } catch (err) {
+      console.error('Application error:', err);
+      setApplicationError(err.message || 'Failed to apply. Please try again.');
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
+      </div>
+    );
+  }
+
+  if (error || !job) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Job Not Found</h1>
+            <p className="text-gray-600 mb-6">{error || 'The job you are looking for does not exist.'}</p>
+            <Link to="/jobs" className="inline-flex items-center text-yellow-600 hover:text-yellow-700">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Jobs
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="job-details">
-      <h1>{job.title}</h1>
-      <p className="company">{job.company}</p>
-      <div className="info">
-        <span>{job.location}</span>
-        <span>{job.type}</span>
-        <span>{job.salary}</span>
-        <span>Posted: {new Date(job.postedAt).toLocaleDateString()}</span>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Back Button */}
+          <Link to="/jobs" className="inline-flex items-center text-gray-600 hover:text-yellow-600 mb-6">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Jobs
+          </Link>
+
+          {/* Success Message */}
+          {applicationSuccess && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+              <p className="text-green-800">Application submitted successfully!</p>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {applicationError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+              <p className="text-red-800">{applicationError}</p>
+            </div>
+          )}
+
+          {/* Job Header */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
+                <div className="flex items-center space-x-4 mb-4">
+                  <Link 
+                    to={`/companies/${job.companyId || job.id}`} 
+                    className="flex items-center text-blue-600 hover:text-blue-700"
+                  >
+                    <Building2 className="h-4 w-4 mr-1" />
+                    <span className="font-medium">{job.company}</span>
+                  </Link>
+                  <div className="flex items-center text-gray-600">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    <span>{job.location}</span>
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <Briefcase className="h-4 w-4 mr-1" />
+                    <span>{job.type}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <button className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
+                  <Bookmark className="h-5 w-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
+                  <Share2 className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg mt-4">
+              <div>
+                <p className="text-sm text-gray-500">Salary</p>
+                <p className="font-semibold text-gray-900">{job.salary || `$${job.salaryMin} - $${job.salaryMax}`}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Job Type</p>
+                <p className="font-semibold text-gray-900">{job.type}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Experience</p>
+                <p className="font-semibold text-gray-900">{job.experience || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Posted</p>
+                <p className="font-semibold text-gray-900">{new Date(job.postedAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Job Description */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Job Description</h2>
+            <p className="text-gray-700 leading-relaxed mb-6">{job.description}</p>
+
+            {job.responsibilities && job.responsibilities.length > 0 && (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Key Responsibilities</h3>
+                <ul className="list-disc list-inside space-y-2 mb-6">
+                  {job.responsibilities.map((resp, index) => (
+                    <li key={index} className="text-gray-700">{resp}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {job.requirements && job.requirements.length > 0 && (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Requirements</h3>
+                <ul className="list-disc list-inside space-y-2 mb-6">
+                  {job.requirements.map((req, index) => (
+                    <li key={index} className="text-gray-700">{req}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {job.benefits && job.benefits.length > 0 && (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Benefits</h3>
+                <ul className="list-disc list-inside space-y-2">
+                  {job.benefits.map((benefit, index) => (
+                    <li key={index} className="text-gray-700">{benefit}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
+          {/* Skills Section */}
+          {job.skills && job.skills.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Required Skills</h2>
+              <div className="flex flex-wrap gap-2">
+                {job.skills.map((skill, index) => (
+                  <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Apply Button */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <button
+              onClick={handleApply}
+              disabled={applying}
+              className="w-full py-3 bg-yellow-400 text-slate-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50"
+            >
+              {applying ? 'Submitting Application...' : 'Apply Now'}
+            </button>
+            <p className="text-sm text-gray-500 text-center mt-3">
+              By applying, you agree to our terms and conditions
+            </p>
+          </div>
+        </div>
       </div>
-      
-      <div className="section">
-        <h2>Description</h2>
-        <p>{job.description}</p>
-      </div>
-      
-      <div className="section">
-        <h2>Requirements</h2>
-        <ul>
-          {job.requirements.map((req, index) => (
-            <li key={index}>{req}</li>
-          ))}
-        </ul>
-      </div>
-      
-      <div className="section">
-        <h2>Responsibilities</h2>
-        <ul>
-          {job.responsibilities.map((resp, index) => (
-            <li key={index}>{resp}</li>
-          ))}
-        </ul>
-      </div>
-      
-      <button className="apply-btn">Apply Now</button>
     </div>
   );
 };

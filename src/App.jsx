@@ -22,6 +22,8 @@ import Messages from './pages/Messages';
 import PostJob from './pages/PostJob';
 import BrowseCandidates from './pages/BrowseCandidates';
 import Pricing from './pages/Pricing';
+import GoogleAuthCallback from './pages/GoogleAuthCallback';
+import CompanyDetails from './pages/CompanyDetails';
 
 function App() {
   return (
@@ -52,6 +54,8 @@ function App() {
             <Route path="/post-job" element={<PostJob />} />
             <Route path="/candidates" element={<BrowseCandidates />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+            <Route path="/companies/:id" element={<CompanyDetails />} />
           </Routes>
         </main>
         <Footer />
