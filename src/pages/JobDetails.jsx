@@ -1,4 +1,3 @@
-// src/pages/JobDetails.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
@@ -26,8 +25,14 @@ const JobDetails = () => {
   const [applying, setApplying] = useState(false);
   const [applicationSuccess, setApplicationSuccess] = useState(false);
   const [applicationError, setApplicationError] = useState('');
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // Check if user is logged in
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
     fetchJob();
   }, [id]);
 
@@ -35,6 +40,8 @@ const JobDetails = () => {
     try {
       setLoading(true);
       const result = await getJobById(id);
+      console.log('Job details response:', result);
+      
       if (result.success && result.job) {
         setJob(result.job);
       } else {
@@ -49,9 +56,17 @@ const JobDetails = () => {
   };
 
   const handleApply = async () => {
+    // Check if user is logged in
     const token = localStorage.getItem('token');
     if (!token) {
-      navigate('/login');
+      navigate('/login', { state: { from: `/jobs/${id}` } });
+      return;
+    }
+
+    // Check if user is a job seeker
+    const userRole = user?.userType || user?.role;
+    if (userRole === 'employee' || userRole === 'employer') {
+      setApplicationError('Employers cannot apply for jobs. Please switch to a job seeker account.');
       return;
     }
 
@@ -59,20 +74,43 @@ const JobDetails = () => {
     setApplicationError('');
 
     try {
-      const result = await applyForJob({
+      const applicationData = {
         jobId: parseInt(id),
         coverLetter: "I am very interested in this position and believe my skills align perfectly with your requirements."
-      });
+      };
+      
+      console.log('Sending application data:', applicationData);
+      
+      const result = await applyForJob(applicationData);
+      console.log('Application result:', result);
       
       if (result.success) {
         setApplicationSuccess(true);
         setTimeout(() => {
           setApplicationSuccess(false);
         }, 5000);
+        
+        // Optional: Show success message and redirect after 2 seconds
+        setTimeout(() => {
+          navigate('/applications');
+        }, 2000);
+      } else {
+        setApplicationError(result.message || 'Failed to apply. Please try again.');
       }
     } catch (err) {
       console.error('Application error:', err);
-      setApplicationError(err.message || 'Failed to apply. Please try again.');
+      
+      // Handle specific error messages
+      if (err.message.includes('already applied')) {
+        setApplicationError('You have already applied for this position.');
+      } else if (err.message.includes('401')) {
+        setApplicationError('Please login to apply for this job.');
+        setTimeout(() => navigate('/login'), 2000);
+      } else if (err.message.includes('403')) {
+        setApplicationError('You do not have permission to apply for jobs.');
+      } else {
+        setApplicationError(err.message || 'Failed to apply. Please try again.');
+      }
     } finally {
       setApplying(false);
     }
@@ -116,9 +154,14 @@ const JobDetails = () => {
 
           {/* Success Message */}
           {applicationSuccess && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <p className="text-green-800">Application submitted successfully!</p>
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+              <div className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                <p className="text-green-800">Application submitted successfully!</p>
+              </div>
+              <Link to="/applications" className="text-green-600 hover:text-green-700 font-medium">
+                View My Applications →
+              </Link>
             </div>
           )}
 
@@ -135,7 +178,7 @@ const JobDetails = () => {
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
-                <div className="flex items-center space-x-4 mb-4">
+                <div className="flex items-center space-x-4 mb-4 flex-wrap gap-2">
                   <Link 
                     to={`/companies/${job.companyId || job.id}`} 
                     className="flex items-center text-blue-600 hover:text-blue-700"
@@ -166,7 +209,9 @@ const JobDetails = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg mt-4">
               <div>
                 <p className="text-sm text-gray-500">Salary</p>
-                <p className="font-semibold text-gray-900">{job.salary || `$${job.salaryMin} - $${job.salaryMax}`}</p>
+                <p className="font-semibold text-gray-900">
+                  {job.salary || (job.salaryMin && job.salaryMax ? `$${job.salaryMin} - $${job.salaryMax}` : 'Not specified')}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Job Type</p>
@@ -178,7 +223,9 @@ const JobDetails = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Posted</p>
-                <p className="font-semibold text-gray-900">{new Date(job.postedAt).toLocaleDateString()}</p>
+                <p className="font-semibold text-gray-900">
+                  {job.postedAt ? new Date(job.postedAt).toLocaleDateString() : 'Recently'}
+                </p>
               </div>
             </div>
           </div>
@@ -186,7 +233,7 @@ const JobDetails = () => {
           {/* Job Description */}
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Job Description</h2>
-            <p className="text-gray-700 leading-relaxed mb-6">{job.description}</p>
+            <p className="text-gray-700 leading-relaxed mb-6 whitespace-pre-wrap">{job.description}</p>
 
             {job.responsibilities && job.responsibilities.length > 0 && (
               <>
@@ -238,10 +285,17 @@ const JobDetails = () => {
 
           {/* Apply Button */}
           <div className="bg-white rounded-lg shadow-sm p-6">
+            {(user?.userType === 'employee' || user?.role === 'employee' || user?.role === 'employer') && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800 text-sm text-center">
+                  You are logged in as an employer. Please switch to a job seeker account to apply for jobs.
+                </p>
+              </div>
+            )}
             <button
               onClick={handleApply}
-              disabled={applying}
-              className="w-full py-3 bg-yellow-400 text-slate-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50"
+              disabled={applying || (user?.userType === 'employee') || (user?.role === 'employee') || (user?.role === 'employer')}
+              className="w-full py-3 bg-yellow-400 text-slate-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {applying ? 'Submitting Application...' : 'Apply Now'}
             </button>

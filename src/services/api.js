@@ -1,4 +1,3 @@
-// src/services/api.js
 const API_URL = 'http://localhost:5000/api';
 
 // Store token
@@ -38,17 +37,34 @@ const apiCall = async (endpoint, method = 'GET', data = null) => {
   
   try {
     console.log(`Making ${method} request to: ${API_URL}${endpoint}`);
+    if (data) console.log('Request data:', data);
     
     const response = await fetch(`${API_URL}${endpoint}`, config);
     
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('API Error:', errorData);
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    // Try to parse response as JSON
+    let result;
+    try {
+      result = await response.json();
+    } catch (e) {
+      console.error('Failed to parse JSON response:', e);
+      throw new Error('Invalid response from server');
     }
     
-    const result = await response.json();
-    console.log('API Response:', result);
+    console.log('API Response Status:', response.status);
+    console.log('API Response Data:', result);
+    
+    if (!response.ok) {
+      // Handle specific error codes
+      if (response.status === 401) {
+        // Unauthorized - clear token and redirect to login
+        setAuthToken(null);
+        localStorage.removeItem('user');
+        throw new Error('Please login to continue');
+      }
+      
+      throw new Error(result.message || result.error || `HTTP error! status: ${response.status}`);
+    }
+    
     return result;
   } catch (error) {
     console.error('API Call Error:', error);
@@ -85,12 +101,13 @@ export const login = async (credentials) => {
       // Check for different possible role field names from backend
       const normalizedUser = {
         ...result.user,
-        role: result.user.role || result.user.user_type || result.user.userType || result.user.type
+        role: result.user.role || result.user.user_type || result.user.userType || result.user.type,
+        userType: result.user.userType || result.user.user_type || result.user.role || result.user.type,
+        name: result.user.name || result.user.fullName || result.user.email?.split('@')[0] || 'User'
       };
       
       // Log the role detection for debugging
-      console.log('Normalized user role:', normalizedUser.role);
-      console.log('Original user data:', result.user);
+      console.log('Normalized user:', normalizedUser);
       
       // Return normalized user data
       return {
@@ -113,7 +130,8 @@ export const getCurrentUser = async () => {
     if (result.user) {
       const normalizedUser = {
         ...result.user,
-        role: result.user.role || result.user.user_type || result.user.userType || result.user.type
+        role: result.user.role || result.user.user_type || result.user.userType || result.user.type,
+        userType: result.user.userType || result.user.user_type || result.user.role || result.user.type
       };
       
       return {
@@ -132,6 +150,7 @@ export const getCurrentUser = async () => {
 export const logout = () => {
   setAuthToken(null);
   localStorage.removeItem('user');
+  localStorage.removeItem('token');
 };
 
 // Job Services
@@ -139,15 +158,40 @@ export const getJobs = async (filters = {}) => {
   try {
     const queryParams = new URLSearchParams(filters).toString();
     const endpoint = `/jobs${queryParams ? `?${queryParams}` : ''}`;
-    return await apiCall(endpoint);
+    const result = await apiCall(endpoint);
+    
+    // Handle different response structures
+    if (result.success && result.jobs) {
+      return result;
+    } else if (result.jobs) {
+      return { success: true, jobs: result.jobs, total: result.total || result.jobs.length };
+    } else if (Array.isArray(result)) {
+      return { success: true, jobs: result, total: result.length };
+    } else {
+      return { success: true, jobs: [], total: 0 };
+    }
   } catch (error) {
     console.error('Get jobs error:', error);
-    return { success: true, jobs: [], total: 0 };
+    return { success: false, jobs: [], total: 0, error: error.message };
   }
 };
 
 export const getJobById = async (id) => {
-  return await apiCall(`/jobs/${id}`);
+  try {
+    const result = await apiCall(`/jobs/${id}`);
+    
+    // Handle different response structures
+    if (result.success && result.job) {
+      return result;
+    } else if (result.job) {
+      return { success: true, job: result.job };
+    } else {
+      return { success: true, job: result };
+    }
+  } catch (error) {
+    console.error('Get job by ID error:', error);
+    throw error;
+  }
 };
 
 export const createJob = async (jobData) => {
@@ -156,11 +200,70 @@ export const createJob = async (jobData) => {
 
 // Application Services
 export const applyForJob = async (applicationData) => {
-  return await apiCall('/applications', 'POST', applicationData);
+  try {
+    // Make sure jobId is being sent correctly
+    const payload = {
+      jobId: parseInt(applicationData.jobId) || applicationData.jobId,
+      coverLetter: applicationData.coverLetter || ''
+    };
+    
+    console.log('Applying for job with payload:', payload);
+    console.log('Auth token present:', !!getAuthToken());
+    
+    const result = await apiCall('/applications', 'POST', payload);
+    console.log('Application response:', result);
+    
+    // Handle different response structures
+    if (result.success === false) {
+      throw new Error(result.message || 'Application failed');
+    }
+    
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Apply for job error:', error);
+    throw error;
+  }
 };
 
 export const getMyApplications = async () => {
-  return await apiCall('/applications/my-applications');
+  try {
+    const result = await apiCall('/applications/my-applications');
+    return result;
+  } catch (error) {
+    console.error('Get my applications error:', error);
+    throw error;
+  }
+};
+
+// Add these missing exports if you need them
+export const getEmployerJobs = async () => {
+  try {
+    const result = await apiCall('/jobs/employer');
+    return result;
+  } catch (error) {
+    console.error('Get employer jobs error:', error);
+    throw error;
+  }
+};
+
+export const getJobApplicants = async (jobId) => {
+  try {
+    const result = await apiCall(`/jobs/${jobId}/applicants`);
+    return result;
+  } catch (error) {
+    console.error('Get job applicants error:', error);
+    throw error;
+  }
+};
+
+export const updateApplicationStatus = async (applicationId, status) => {
+  try {
+    const result = await apiCall(`/applications/${applicationId}`, 'PATCH', { status });
+    return result;
+  } catch (error) {
+    console.error('Update application status error:', error);
+    throw error;
+  }
 };
 
 export default {
@@ -173,4 +276,7 @@ export default {
   createJob,
   applyForJob,
   getMyApplications,
+  getEmployerJobs,
+  getJobApplicants,
+  updateApplicationStatus
 };
