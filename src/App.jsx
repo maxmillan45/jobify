@@ -1,5 +1,7 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import JobList from './pages/JobList';
@@ -28,38 +30,94 @@ import CompanyDetails from './pages/CompanyDetails';
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<JobList />} />
-            <Route path="/jobs" element={<JobList />} />
-            <Route path="/jobs/:id" element={<JobDetails />} />
-            <Route path="/companies" element={<Companies />} />
-            <Route path="/salaries" element={<Salaries />} />
-            <Route path="/career" element={<CareerAdvice />} />
-            <Route path="/career-advice" element={<CareerAdvice />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/applications" element={<Applications />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/saved-jobs" element={<SavedJobs />} />
-            <Route path="/employer-jobs" element={<EmployerJobs />} />
-            <Route path="/help" element={<HelpCenter />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/post-job" element={<PostJob />} />
-            <Route path="/candidates" element={<BrowseCandidates />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
-            <Route path="/companies/:id" element={<CompanyDetails />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+      <AuthProvider>
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+          <Header />
+          <main className="flex-grow">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<JobList />} />
+              <Route path="/jobs" element={<JobList />} />
+              <Route path="/jobs/:id" element={<JobDetails />} />
+              <Route path="/companies" element={<Companies />} />
+              <Route path="/companies/:id" element={<CompanyDetails />} />
+              <Route path="/salaries" element={<Salaries />} />
+              <Route path="/career" element={<CareerAdvice />} />
+              <Route path="/career-advice" element={<CareerAdvice />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/contact" element={<Contact />} />
+              
+              {/* Protected Routes - Require Authentication */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/notifications" element={
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/messages" element={
+                <ProtectedRoute>
+                  <Messages />
+                </ProtectedRoute>
+              } />
+              
+              {/* Job Seeker Specific Routes */}
+              <Route path="/applications" element={
+                <ProtectedRoute allowedRoles={['job_seeker']}>
+                  <Applications />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/saved-jobs" element={
+                <ProtectedRoute allowedRoles={['job_seeker']}>
+                  <SavedJobs />
+                </ProtectedRoute>
+              } />
+              
+              {/* Employee/Employer Specific Routes */}
+              <Route path="/employer-jobs" element={
+                <ProtectedRoute allowedRoles={['employee', 'employer']}>
+                  <EmployerJobs />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/post-job" element={
+                <ProtectedRoute allowedRoles={['employee', 'employer']}>
+                  <PostJob />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/candidates" element={
+                <ProtectedRoute allowedRoles={['employee', 'employer']}>
+                  <BrowseCandidates />
+                </ProtectedRoute>
+              } />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </AuthProvider>
     </Router>
   );
 }

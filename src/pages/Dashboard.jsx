@@ -1,4 +1,3 @@
-// pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, Users, FileText, Star, Clock, CheckCircle, XCircle, TrendingUp, Award, Calendar } from 'lucide-react';
@@ -22,21 +21,19 @@ const Dashboard = () => {
       navigate('/login');
       return;
     }
-    setUser(JSON.parse(storedUser));
     
-    // TODO: Fetch actual stats from API
-    // For demo, set some mock data
-    const storedUserData = JSON.parse(storedUser);
-    if (storedUserData.userType === 'employee') {
-      setStats({
-        totalApplications: 12,
-        interviews: 3,
-        savedJobs: 8,
-        jobPosts: 0,
-        applicants: 0,
-        views: 0
-      });
-    } else {
+    const parsedUser = JSON.parse(storedUser);
+    console.log('Dashboard - User data:', parsedUser);
+    
+    // Check for role in either userType or role field
+    const userRole = parsedUser.userType || parsedUser.role;
+    console.log('Dashboard - User role:', userRole);
+    
+    setUser(parsedUser);
+    
+    // Set stats based on user role
+    if (userRole === 'employee' || userRole === 'employer') {
+      // Employer stats
       setStats({
         totalApplications: 0,
         interviews: 0,
@@ -44,6 +41,16 @@ const Dashboard = () => {
         jobPosts: 5,
         applicants: 47,
         views: 1250
+      });
+    } else {
+      // Job seeker stats
+      setStats({
+        totalApplications: 12,
+        interviews: 3,
+        savedJobs: 8,
+        jobPosts: 0,
+        applicants: 0,
+        views: 0
       });
     }
   }, [navigate]);
@@ -56,14 +63,18 @@ const Dashboard = () => {
     );
   }
 
-  // Employee Dashboard
-  if (user.userType === 'employee') {
+  const userRole = user.userType || user.role;
+  const isEmployer = userRole === 'employee' || userRole === 'employer';
+  const isJobSeeker = !isEmployer;
+
+  // Job Seeker Dashboard
+  if (isJobSeeker) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="container mx-auto px-4">
           {/* Welcome Section */}
           <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-8 text-white mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h1>
+            <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name || user.email}!</h1>
             <p className="text-purple-200">Your job search journey continues. Here's what's happening with your applications.</p>
           </div>
 
@@ -154,7 +165,7 @@ const Dashboard = () => {
       <div className="container mx-auto px-4">
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h1>
+          <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name || user.email}!</h1>
           <p className="text-blue-200">Manage your job posts and review applicants for {user.companyName || 'your company'}.</p>
         </div>
 
@@ -209,17 +220,26 @@ const Dashboard = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="p-4 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition">
+            <button 
+              onClick={() => navigate('/post-job')}
+              className="p-4 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition"
+            >
               <Briefcase className="h-8 w-8 text-purple-600 mx-auto mb-2" />
               <p className="font-medium text-gray-700">Post New Job</p>
               <p className="text-sm text-gray-500">Create a new job listing</p>
             </button>
-            <button className="p-4 border-2 border-dashed border-green-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition">
+            <button 
+              onClick={() => navigate('/candidates')}
+              className="p-4 border-2 border-dashed border-green-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition"
+            >
               <Users className="h-8 w-8 text-green-600 mx-auto mb-2" />
               <p className="font-medium text-gray-700">View Applicants</p>
               <p className="text-sm text-gray-500">Review new applications</p>
             </button>
-            <button className="p-4 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition">
+            <button 
+              onClick={() => navigate('/profile')}
+              className="p-4 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition"
+            >
               <Award className="h-8 w-8 text-blue-600 mx-auto mb-2" />
               <p className="font-medium text-gray-700">Company Profile</p>
               <p className="text-sm text-gray-500">Update company info</p>
@@ -244,7 +264,10 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-          <button className="mt-4 text-purple-600 hover:text-purple-700 font-medium">
+          <button 
+            onClick={() => navigate('/employer-jobs')}
+            className="mt-4 text-purple-600 hover:text-purple-700 font-medium"
+          >
             View all job posts →
           </button>
         </div>

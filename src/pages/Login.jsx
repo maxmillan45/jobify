@@ -1,12 +1,9 @@
-// src/pages/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { login } from '../services/api';
 
-// Google Sign-In Component
 const GoogleSignIn = () => {
   const handleGoogleLogin = () => {
-    // Open Google OAuth window
     window.location.href = 'http://localhost:5000/api/auth/google';
   };
 
@@ -50,7 +47,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check for Google OAuth callback
     const params = new URLSearchParams(location.search);
     const errorParam = params.get('error');
     if (errorParam === 'google_auth_failed') {
@@ -77,8 +73,32 @@ const Login = () => {
       console.log('Login result:', result);
       
       if (result.success && result.user) {
-        localStorage.setItem('user', JSON.stringify(result.user));
-        navigate('/dashboard');
+        // Normalize user data to match what Dashboard expects
+        const normalizedUser = {
+          ...result.user,
+          // Map role to userType for dashboard compatibility
+          userType: result.user.role || result.user.user_type || result.user.userType,
+          // Keep original role field too
+          role: result.user.role || result.user.user_type || result.user.userType,
+          name: result.user.name || result.user.fullName || result.user.email.split('@')[0],
+          companyName: result.user.companyName || result.user.company || ''
+        };
+        
+        console.log('Normalized user for storage:', normalizedUser);
+        
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
+        
+        if (result.token) {
+          localStorage.setItem('token', result.token);
+        }
+        
+        // Navigate based on userType
+        if (normalizedUser.userType === 'employee' || normalizedUser.userType === 'employer') {
+          navigate('/dashboard'); // Employer dashboard
+        } else {
+          navigate('/dashboard'); // Job seeker dashboard
+        }
       } else {
         setError('Login failed. Please check your credentials.');
       }
@@ -101,12 +121,10 @@ const Login = () => {
           </div>
         )}
         
-        {/* Google Sign In Button */}
         <div className="mb-6">
           <GoogleSignIn />
         </div>
 
-        {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300"></div>
@@ -143,14 +161,14 @@ const Login = () => {
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              placeholder="••••••"
+              placeholder="Enter your password"
             />
           </div>
           
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-yellow-400 text-slate-900 font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50"
+            className="w-full bg-yellow-400 text-slate-900 font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>

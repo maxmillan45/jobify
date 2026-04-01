@@ -73,9 +73,32 @@ export const register = async (userData) => {
 export const login = async (credentials) => {
   try {
     const result = await apiCall('/auth/login', 'POST', credentials);
+    
+    console.log('Raw login response:', result);
+    
     if (result.token) {
       setAuthToken(result.token);
     }
+    
+    // Normalize user data to ensure consistent field names
+    if (result.user) {
+      // Check for different possible role field names from backend
+      const normalizedUser = {
+        ...result.user,
+        role: result.user.role || result.user.user_type || result.user.userType || result.user.type
+      };
+      
+      // Log the role detection for debugging
+      console.log('Normalized user role:', normalizedUser.role);
+      console.log('Original user data:', result.user);
+      
+      // Return normalized user data
+      return {
+        ...result,
+        user: normalizedUser
+      };
+    }
+    
     return result;
   } catch (error) {
     console.error('Login error:', error);
@@ -85,7 +108,21 @@ export const login = async (credentials) => {
 
 export const getCurrentUser = async () => {
   try {
-    return await apiCall('/auth/me');
+    const result = await apiCall('/auth/me');
+    
+    if (result.user) {
+      const normalizedUser = {
+        ...result.user,
+        role: result.user.role || result.user.user_type || result.user.userType || result.user.type
+      };
+      
+      return {
+        ...result,
+        user: normalizedUser
+      };
+    }
+    
+    return result;
   } catch (error) {
     console.error('Get current user error:', error);
     throw error;
@@ -105,7 +142,6 @@ export const getJobs = async (filters = {}) => {
     return await apiCall(endpoint);
   } catch (error) {
     console.error('Get jobs error:', error);
-    // Return empty jobs array on error
     return { success: true, jobs: [], total: 0 };
   }
 };
