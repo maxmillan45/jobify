@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://jobify-backend-ten.vercel.app/api';
 
 // Store token
 export const setAuthToken = (token) => {
