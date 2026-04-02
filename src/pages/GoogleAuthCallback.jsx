@@ -1,68 +1,65 @@
 // src/pages/GoogleAuthCallback.jsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { setAuthToken } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const GoogleAuthCallback = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [error, setError] = useState('');
+  const { googleCallback } = useAuth();
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const handleCallback = async () => {
       const params = new URLSearchParams(location.search);
       const token = params.get('token');
-      
+      const errorParam = params.get('error');
+
+      if (errorParam === 'google_auth_failed') {
+        setError('Google authentication failed. Please try again.');
+        setTimeout(() => navigate('/login'), 3000);
+        return;
+      }
+
       if (token) {
         try {
-          // Verify token with backend
-          const response = await fetch('http://localhost:5000/api/auth/google/verify', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ token }),
-          });
-          
-          const data = await response.json();
-          
-          if (data.success) {
-            setAuthToken(data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+          const result = await googleCallback(token);
+          if (result.success) {
             navigate('/dashboard');
           } else {
-            setError('Authentication failed');
+            setError(result.message || 'Authentication failed');
             setTimeout(() => navigate('/login'), 3000);
           }
         } catch (err) {
-          console.error('Google auth error:', err);
-          setError('Authentication failed');
+          setError('Authentication failed. Please try again.');
           setTimeout(() => navigate('/login'), 3000);
         }
       } else {
-        setError('No token provided');
+        setError('No authentication token received');
         setTimeout(() => navigate('/login'), 3000);
       }
     };
-    
+
     handleCallback();
-  }, [location, navigate]);
+  }, [location, navigate, googleCallback]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-red-600 text-xl mb-4">Error</div>
+          <p className="text-gray-600">{error}</p>
+          <p className="text-gray-500 mt-2">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
-        {error ? (
-          <>
-            <div className="text-red-600 text-xl mb-2">Error</div>
-            <p className="text-gray-600">{error}</p>
-            <p className="text-gray-500 mt-2">Redirecting to login...</p>
-          </>
-        ) : (
-          <>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-            <p className="text-gray-600">Completing sign in...</p>
-          </>
-        )}
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Completing Google sign in...</p>
       </div>
     </div>
   );

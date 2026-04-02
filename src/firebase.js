@@ -43,7 +43,6 @@ const validateFirebaseConfig = () => {
   
   if (missingFields.length > 0) {
     console.error('Firebase configuration is missing required fields:', missingFields);
-    console.error('Please check your .env file and ensure all VITE_FIREBASE_* variables are set');
     return false;
   }
   return true;
@@ -71,7 +70,7 @@ const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
 googleProvider.setCustomParameters({
-  prompt: 'select_account' // Forces account selection dialog
+  prompt: 'select_account'
 });
 
 // ==================== GOOGLE AUTH ====================
@@ -336,7 +335,7 @@ export const getCurrentFirebaseUser = () => {
   });
 };
 
-// Listen to auth state changes
+// Listen to auth state changes - THIS IS THE EXPORT YOU NEED
 export const onAuthChange = (callback) => {
   if (!auth) {
     callback({
@@ -391,7 +390,7 @@ export const refreshFirebaseToken = async () => {
   const user = auth.currentUser;
   if (user) {
     try {
-      return await user.getIdToken(true); // Force refresh
+      return await user.getIdToken(true);
     } catch (error) {
       console.error('Token refresh error:', error);
       return null;

@@ -1,12 +1,13 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { getCurrentUser, login as apiLogin, logout as apiLogout } from '../services/api';
+import { login as apiLogin, register as apiRegister, getCurrentUser, setAuthToken } from '../services/api';
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
@@ -14,93 +15,111 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
-        
-        if (storedUser && token) {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-          
-          // Optional: Verify token with backend
-          try {
-            const response = await getCurrentUser();
-            if (response && response.user) {
-              const normalizedUser = {
-                ...response.user,
-                role: response.user.role || response.user.user_type || response.user.userType
-              };
-              setUser(normalizedUser);
-              localStorage.setItem('user', JSON.stringify(normalizedUser));
-            }
-          } catch (err) {
-            console.error('Token verification failed:', err);
-            // If token verification fails, clear storage
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setUser(null);
-          }
-        }
-      } catch (err) {
-        console.error('Auth initialization error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (token) {
+      setAuthToken(token);
+      loadUser();
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
 
-    initAuth();
-  }, []);
+  const loadUser = async () => {
+    try {
+      const response = await getCurrentUser();
+      if (response.success && response.user) {
+        setUser(response.user);
+      } else {
+        logout();
+      }
+    } catch (error) {
+      console.error('Load user error:', error);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (credentials) => {
-    setError(null);
-    
     try {
       const response = await apiLogin(credentials);
-      
-      if (response && response.user) {
-        const normalizedUser = {
-          ...response.user,
-          role: response.user.role || response.user.user_type || response.user.userType
-        };
-        
-        setUser(normalizedUser);
-        localStorage.setItem('user', JSON.stringify(normalizedUser));
-        
-        if (response.token) {
-          localStorage.setItem('token', response.token);
-        }
-        
-        return response;
-      } else {
-        throw new Error('No user data received');
+      if (response.success && response.token) {
+        setAuthToken(response.token);
+        setToken(response.token);
+        setUser(response.user);
+        return { success: true, user: response.user };
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message);
-      throw err;
+      return { success: false, message: response.message || 'Login failed' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      const response = await apiRegister(userData);
+      if (response.success && response.token) {
+        setAuthToken(response.token);
+        setToken(response.token);
+        setUser(response.user);
+        return { success: true, user: response.user };
+      }
+      return { success: false, message: response.message || 'Registration failed' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  };
+
+  const googleLogin = () => {
+    // Redirect to Google OAuth endpoint
+    window.location.href = 'http://localhost:5000/api/auth/google';
+  };
+
+  const googleCallback = async (token) => {
+    try {
+      // Verify the token with backend
+      const response = await fetch('http://localhost:5000/api/auth/google/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.token) {
+        setAuthToken(data.token);
+        setToken(data.token);
+        setUser(data.user);
+        return { success: true, user: data.user };
+      }
+      return { success: false, message: data.message || 'Google authentication failed' };
+    } catch (error) {
+      console.error('Google callback error:', error);
+      return { success: false, message: error.message };
     }
   };
 
   const logout = () => {
-    apiLogout();
+    setAuthToken(null);
+    setToken(null);
     setUser(null);
-    localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   const value = {
     user,
     loading,
-    error,
-    login,
-    logout,
     isAuthenticated: !!user,
-    isJobSeeker: user?.role === 'job_seeker',
-    isEmployee: user?.role === 'employee' || user?.role === 'employer'
+    login,
+    register,
+    googleLogin,
+    googleCallback,
+    logout,
   };
 
   return (

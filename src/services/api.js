@@ -1,4 +1,8 @@
-const API_URL = 'https://jobify-backend-ten.vercel.app/api';
+// Change this line from:
+// const API_URL = 'https://jobify-backend-ten.vercel.app/api';
+
+// To this:
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Store token
 export const setAuthToken = (token) => {
@@ -56,10 +60,16 @@ const apiCall = async (endpoint, method = 'GET', data = null) => {
     if (!response.ok) {
       // Handle specific error codes
       if (response.status === 401) {
-        // Unauthorized - clear token and redirect to login
-        setAuthToken(null);
-        localStorage.removeItem('user');
-        throw new Error('Please login to continue');
+        // Only clear token and redirect for protected routes, not for login/register
+        const isAuthRoute = endpoint.includes('/auth/login') || endpoint.includes('/auth/register');
+        if (!isAuthRoute) {
+          setAuthToken(null);
+          localStorage.removeItem('user');
+          throw new Error('Please login to continue');
+        } else {
+          // For login/register, just throw the error message
+          throw new Error(result.message || 'Authentication failed');
+        }
       }
       
       throw new Error(result.message || result.error || `HTTP error! status: ${response.status}`);
@@ -238,7 +248,7 @@ export const getMyApplications = async () => {
 // Add these missing exports if you need them
 export const getEmployerJobs = async () => {
   try {
-    const result = await apiCall('/jobs/employer');
+    const result = await apiCall('/jobs/employer/my-jobs');
     return result;
   } catch (error) {
     console.error('Get employer jobs error:', error);
@@ -258,7 +268,7 @@ export const getJobApplicants = async (jobId) => {
 
 export const updateApplicationStatus = async (applicationId, status) => {
   try {
-    const result = await apiCall(`/applications/${applicationId}`, 'PATCH', { status });
+    const result = await apiCall(`/applications/${applicationId}/status`, 'PUT', { status });
     return result;
   } catch (error) {
     console.error('Update application status error:', error);
