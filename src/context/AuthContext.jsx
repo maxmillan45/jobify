@@ -74,13 +74,13 @@ export const AuthProvider = ({ children }) => {
 
   const googleLogin = () => {
     // Redirect to Google OAuth endpoint
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`;
   };
 
   const googleCallback = async (token) => {
     try {
       // Verify the token with backend
-      const response = await fetch('http://localhost:5000/api/auth/google/verify', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/google/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
