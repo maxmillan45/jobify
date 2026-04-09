@@ -1,3 +1,4 @@
+// src/services/api.js
 // Change this line to use the deployed backend
 const API_URL = 'https://jobify-backend-ten.vercel.app/api';
 
@@ -168,6 +169,46 @@ export const login = async (credentials) => {
     return {
       success: false,
       message: error.message || 'Login failed'
+    };
+  }
+};
+
+// Google Login with Firebase token
+export const googleLogin = async (firebaseToken) => {
+  try {
+    const result = await apiCall('/auth/google', 'POST', { token: firebaseToken });
+    
+    console.log('Google login response:', result);
+    
+    if (result.token) {
+      setAuthToken(result.token);
+    }
+    
+    // Normalize user data
+    if (result.user) {
+      const normalizedUser = {
+        ...result.user,
+        role: result.user.role || result.user.user_type || result.user.userType || 'job_seeker',
+        userType: result.user.userType || result.user.user_type || result.user.role || 'job_seeker',
+        name: result.user.name || result.user.email?.split('@')[0] || 'User'
+      };
+      
+      return {
+        success: true,
+        token: result.token,
+        user: normalizedUser
+      };
+    }
+    
+    return {
+      success: false,
+      message: result.message || 'Google login failed'
+    };
+  } catch (error) {
+    console.error('Google login error:', error);
+    return {
+      success: false,
+      message: error.message || 'Google login failed'
     };
   }
 };
@@ -375,6 +416,7 @@ export const deleteCompany = async (id) => {
 export default {
   register,
   login,
+  googleLogin,
   getCurrentUser,
   logout,
   getJobs,

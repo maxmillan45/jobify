@@ -1,11 +1,11 @@
 // src/pages/Register.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register: authRegister, googleLogin } = useAuth();
+  const { register: authRegister, googleLogin, isAuthenticated, user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,6 +15,23 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Redirect immediately when authenticated
+  useEffect(() => {
+    console.log('Auth state changed - isAuthenticated:', isAuthenticated, 'user:', user);
+    if (isAuthenticated && user && !authLoading) {
+      console.log('Redirecting to dashboard...');
+      // Redirect based on user role
+      const userRole = user.role || user.userType;
+      if (userRole === 'employer') {
+        navigate('/employer/dashboard');
+      } else if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [isAuthenticated, user, authLoading, navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -27,6 +44,17 @@ const Register = () => {
     e.preventDefault();
     setError('');
     
+    // Validation
+    if (!formData.name.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+    
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -37,21 +65,52 @@ const Register = () => {
     try {
       const { confirmPassword, ...registerData } = formData;
       const result = await authRegister(registerData);
+      
       if (result.success) {
-        navigate('/dashboard');
+        console.log('Registration successful, waiting for auth state update...');
+        // The useEffect will handle redirect
       } else {
         setError(result.message || 'Registration failed');
+        setLoading(false);
       }
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err.message || 'Registration failed. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleRegister = () => {
-    googleLogin();
+  const handleGoogleRegister = async () => {
+    setError('');
+    setLoading(true);
+    
+    try {
+      const result = await googleLogin();
+      console.log('Google registration result:', result);
+      
+      if (!result.success) {
+        setError(result.message || 'Google sign up failed');
+        setLoading(false);
+      }
+      // Success will be handled by the useEffect redirect
+    } catch (err) {
+      console.error('Google registration error:', err);
+      setError(err.message || 'Google sign up failed. Please try again.');
+      setLoading(false);
+    }
   };
+
+  // Don't render if auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
@@ -67,8 +126,9 @@ const Register = () => {
         {/* Google Sign-Up Button */}
         <button
           onClick={handleGoogleRegister}
+          disabled={loading}
           type="button"
-          className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mb-6"
+          className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -88,7 +148,7 @@ const Register = () => {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          <span>Sign up with Google</span>
+          <span>{loading ? 'Please wait...' : 'Sign up with Google'}</span>
         </button>
 
         <div className="relative my-6">
@@ -142,7 +202,7 @@ const Register = () => {
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              placeholder="Create a password"
+              placeholder="Create a password (min. 6 characters)"
             />
           </div>
           

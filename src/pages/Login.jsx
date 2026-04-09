@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login: authLogin, googleLogin, isAuthenticated, user } = useAuth();
+  const { login: authLogin, googleLogin, isAuthenticated, user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -16,11 +16,19 @@ const Login = () => {
   // Redirect immediately when authenticated
   useEffect(() => {
     console.log('Auth state changed - isAuthenticated:', isAuthenticated, 'user:', user);
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !authLoading) {
       console.log('Redirecting to dashboard...');
-      navigate('/dashboard');
+      // Redirect based on user role
+      const userRole = user.role || user.userType;
+      if (userRole === 'employer') {
+        navigate('/employer/dashboard');
+      } else if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, authLoading, navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -39,9 +47,8 @@ const Login = () => {
       console.log('Login result:', result);
       
       if (result.success) {
-        // Don't redirect here - let the useEffect handle it
         console.log('Login successful, waiting for auth state update...');
-        // The useEffect will redirect when isAuthenticated becomes true
+        // The useEffect will handle redirect
       } else {
         setError(result.message || 'Login failed');
         setLoading(false);
@@ -53,9 +60,37 @@ const Login = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    googleLogin();
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    
+    try {
+      const result = await googleLogin();
+      console.log('Google login result:', result);
+      
+      if (!result.success) {
+        setError(result.message || 'Google login failed');
+        setLoading(false);
+      }
+      // Success will be handled by the useEffect redirect
+    } catch (err) {
+      console.error('Google login error:', err);
+      setError(err.message || 'Google login failed. Please try again.');
+      setLoading(false);
+    }
   };
+
+  // Don't render if auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
@@ -71,8 +106,9 @@ const Login = () => {
         {/* Google Sign-In Button */}
         <button
           onClick={handleGoogleLogin}
+          disabled={loading}
           type="button"
-          className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mb-6"
+          className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -92,7 +128,7 @@ const Login = () => {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          <span>Continue with Google</span>
+          <span>{loading ? 'Please wait...' : 'Continue with Google'}</span>
         </button>
 
         <div className="relative my-6">

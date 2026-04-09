@@ -1,6 +1,18 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { login as apiLogin, register as apiRegister, getCurrentUser, setAuthToken } from '../services/api';
+import { 
+  login as apiLogin, 
+  register as apiRegister, 
+  getCurrentUser, 
+  setAuthToken,
+  googleLogin as apiGoogleLogin,
+  logout as apiLogout
+} from '../services/api';
+import { 
+  signInWithGooglePopup, 
+  logoutUser, 
+  onAuthChange 
+} from '../config/firebase';
 
 const AuthContext = createContext();
 
@@ -17,21 +29,72 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
+  // Load user from token on mount
   useEffect(() => {
-    if (token) {
-      setAuthToken(token);
-      loadUser();
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      
+      if (storedToken) {
+        setAuthToken(storedToken);
+        setToken(storedToken);
+        
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            setLoading(false);
+          } catch (e) {
+            console.error('Error parsing stored user:', e);
+            await loadUser();
+          }
+        } else {
+          await loadUser();
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    
+    initAuth();
+  }, []);
+
+  // Listen to Firebase auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      console.log('Firebase auth state changed:', firebaseUser);
+      
+      if (firebaseUser && firebaseUser.isAuthenticated && firebaseUser.token) {
+        // User logged in with Firebase, sync with backend
+        if (!user) {
+          console.log('Syncing Firebase user with backend...');
+          const result = await apiGoogleLogin(firebaseUser.token);
+          
+          if (result.success) {
+            setAuthToken(result.token);
+            setToken(result.token);
+            setUser(result.user);
+            localStorage.setItem('user', JSON.stringify(result.user));
+          }
+        }
+      } else if (!firebaseUser?.isAuthenticated && user) {
+        // User logged out from Firebase
+        console.log('Firebase user logged out');
+        // Don't auto logout here - let the logout function handle it
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [user]);
 
   const loadUser = async () => {
     try {
       const response = await getCurrentUser();
       if (response.success && response.user) {
         setUser(response.user);
+        localStorage.setItem('user', JSON.stringify(response.user));
       } else {
+        // Token might be invalid, clear it
         logout();
       }
     } catch (error) {
@@ -87,38 +150,58 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const googleLogin = () => {
-    // Redirect to Google OAuth endpoint
-    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`;
-  };
-
-  const googleCallback = async (token) => {
+  const googleLogin = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/google/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token })
-      });
+      // Sign in with Google popup
+      const firebaseResult = await signInWithGooglePopup();
       
-      const data = await response.json();
-      
-      if (data.success && data.token) {
-        setAuthToken(data.token);
-        setToken(data.token);
-        setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        return { success: true, user: data.user };
+      if (!firebaseResult.success) {
+        return { 
+          success: false, 
+          message: firebaseResult.error || 'Google login failed' 
+        };
       }
-      return { success: false, message: data.message || 'Google authentication failed' };
+      
+      // Send Firebase token to your backend
+      const backendResult = await apiGoogleLogin(firebaseResult.token);
+      
+      if (backendResult.success && backendResult.token) {
+        setAuthToken(backendResult.token);
+        setToken(backendResult.token);
+        
+        if (backendResult.user) {
+          setUser(backendResult.user);
+          localStorage.setItem('user', JSON.stringify(backendResult.user));
+        }
+        
+        return { success: true, user: backendResult.user };
+      } else {
+        // If backend login fails, sign out from Firebase
+        await logoutUser();
+        return { 
+          success: false, 
+          message: backendResult.message || 'Failed to authenticate with backend' 
+        };
+      }
     } catch (error) {
-      console.error('Google callback error:', error);
-      return { success: false, message: error.message };
+      console.error('Google login error in context:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Google login failed' 
+      };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Sign out from Firebase
+      await logoutUser();
+    } catch (error) {
+      console.error('Firebase logout error:', error);
+    }
+    
+    // Clear backend auth
+    apiLogout();
     setAuthToken(null);
     setToken(null);
     setUser(null);
@@ -133,7 +216,6 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     googleLogin,
-    googleCallback,
     logout,
   };
 
