@@ -1,8 +1,5 @@
-// Change this line from:
-// const API_URL = 'https://jobify-backend-ten.vercel.app/api';
-
-// To this:
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Change this line to use the deployed backend
+const API_URL = 'https://jobify-backend-ten.vercel.app/api';
 
 // Store token
 export const setAuthToken = (token) => {
@@ -245,7 +242,7 @@ export const getMyApplications = async () => {
   }
 };
 
-// Add these missing exports if you need them
+// Employer Services
 export const getEmployerJobs = async () => {
   try {
     const result = await apiCall('/jobs/employer/my-jobs');
@@ -276,6 +273,57 @@ export const updateApplicationStatus = async (applicationId, status) => {
   }
 };
 
+// Company Services
+export const getCompanies = async () => {
+  try {
+    const result = await apiCall('/companies');
+    return result;
+  } catch (error) {
+    console.error('Get companies error:', error);
+    throw error;
+  }
+};
+
+export const getCompanyById = async (id) => {
+  try {
+    const result = await apiCall(`/companies/${id}`);
+    return result;
+  } catch (error) {
+    console.error('Get company by ID error:', error);
+    throw error;
+  }
+};
+
+export const createCompany = async (companyData) => {
+  try {
+    const result = await apiCall('/companies', 'POST', companyData);
+    return result;
+  } catch (error) {
+    console.error('Create company error:', error);
+    throw error;
+  }
+};
+
+export const updateCompany = async (id, companyData) => {
+  try {
+    const result = await apiCall(`/companies/${id}`, 'PUT', companyData);
+    return result;
+  } catch (error) {
+    console.error('Update company error:', error);
+    throw error;
+  }
+};
+
+export const deleteCompany = async (id) => {
+  try {
+    const result = await apiCall(`/companies/${id}`, 'DELETE');
+    return result;
+  } catch (error) {
+    console.error('Delete company error:', error);
+    throw error;
+  }
+};
+
 export default {
   register,
   login,
@@ -288,5 +336,10 @@ export default {
   getMyApplications,
   getEmployerJobs,
   getJobApplicants,
-  updateApplicationStatus
+  updateApplicationStatus,
+  getCompanies,
+  getCompanyById,
+  createCompany,
+  updateCompany,
+  deleteCompany
 };
