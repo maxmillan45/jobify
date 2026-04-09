@@ -83,13 +83,38 @@ const apiCall = async (endpoint, method = 'GET', data = null) => {
 export const register = async (userData) => {
   try {
     const result = await apiCall('/auth/register', 'POST', userData);
+    
     if (result.token) {
       setAuthToken(result.token);
     }
-    return result;
+    
+    // Normalize user data if present
+    if (result.user) {
+      const normalizedUser = {
+        ...result.user,
+        role: result.user.role || result.user.user_type || result.user.userType || result.user.type,
+        userType: result.user.userType || result.user.user_type || result.user.role || result.user.type,
+        name: result.user.name || result.user.fullName || result.user.email?.split('@')[0] || 'User'
+      };
+      
+      return {
+        success: true,
+        token: result.token,
+        user: normalizedUser
+      };
+    }
+    
+    return {
+      success: !!result.token,
+      token: result.token,
+      message: result.message
+    };
   } catch (error) {
     console.error('Register error:', error);
-    throw error;
+    return {
+      success: false,
+      message: error.message || 'Registration failed'
+    };
   }
 };
 
@@ -116,17 +141,34 @@ export const login = async (credentials) => {
       // Log the role detection for debugging
       console.log('Normalized user:', normalizedUser);
       
-      // Return normalized user data
+      // Return with success property for AuthContext
       return {
-        ...result,
+        success: true,
+        token: result.token,
         user: normalizedUser
       };
     }
     
-    return result;
+    // If login successful but no user object
+    if (result.token) {
+      return {
+        success: true,
+        token: result.token,
+        user: null
+      };
+    }
+    
+    // Login failed
+    return {
+      success: false,
+      message: result.message || 'Login failed'
+    };
   } catch (error) {
     console.error('Login error:', error);
-    throw error;
+    return {
+      success: false,
+      message: error.message || 'Login failed'
+    };
   }
 };
 
@@ -142,15 +184,21 @@ export const getCurrentUser = async () => {
       };
       
       return {
-        ...result,
+        success: true,
         user: normalizedUser
       };
     }
     
-    return result;
+    return {
+      success: false,
+      message: 'User not found'
+    };
   } catch (error) {
     console.error('Get current user error:', error);
-    throw error;
+    return {
+      success: false,
+      message: error.message
+    };
   }
 };
 
