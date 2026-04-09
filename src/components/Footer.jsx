@@ -1,3 +1,6 @@
+// src/components/Footer.jsx
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
   const currentYear = new Date().getFullYear()
 
@@ -18,10 +21,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-3">Quick Links</h4>
             <ul className="space-y-2 text-gray-400 text-sm">
-              <li><a href="/jobs" className="hover:text-yellow-400 transition">Browse Jobs</a></li>
-              <li><a href="/companies" className="hover:text-yellow-400 transition">Companies</a></li>
-              <li><a href="/salaries" className="hover:text-yellow-400 transition">Salaries</a></li>
-              <li><a href="/career" className="hover:text-yellow-400 transition">Career Advice</a></li>
+              <li><Link to="/jobs" className="hover:text-yellow-400 transition">Browse Jobs</Link></li>
+              <li><Link to="/companies" className="hover:text-yellow-400 transition">Companies</Link></li>
+              <li><Link to="/salaries" className="hover:text-yellow-400 transition">Salaries</Link></li>
+              <li><Link to="/career" className="hover:text-yellow-400 transition">Career Advice</Link></li>
             </ul>
           </div>
 
@@ -29,9 +32,9 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-3">For Employers</h4>
             <ul className="space-y-2 text-gray-400 text-sm">
-              <li><a href="/post-job" className="hover:text-yellow-400 transition">Post a Job</a></li>
-              <li><a href="/candidates" className="hover:text-yellow-400 transition">Browse Candidates</a></li>
-              <li><a href="/pricing" className="hover:text-yellow-400 transition">Pricing</a></li>
+              <li><Link to="/post-job" className="hover:text-yellow-400 transition">Post a Job</Link></li>
+              <li><Link to="/candidates" className="hover:text-yellow-400 transition">Browse Candidates</Link></li>
+              <li><Link to="/pricing" className="hover:text-yellow-400 transition">Pricing</Link></li>
             </ul>
           </div>
 

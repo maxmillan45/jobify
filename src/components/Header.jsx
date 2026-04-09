@@ -17,48 +17,19 @@ import {
   Sparkles,
   TrendingUp
 } from 'lucide-react';
-import { getCurrentUser, logout as logoutService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const Header = () => {
   const navigate = useNavigate();
+  const { user: authUser, isAuthenticated, logout: authLogout, loading: authLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   
   // Refs
   const profileRef = useRef(null);
   const notificationsRef = useRef(null);
-
-  // Check if user is logged in on component mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const result = await getCurrentUser();
-          if (result.success) {
-            setUser(result.user);
-            localStorage.setItem('user', JSON.stringify(result.user));
-          }
-        } catch (error) {
-          console.error('Auth error:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        }
-      } else {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        }
-      }
-      setLoading(false);
-    };
-    
-    checkAuth();
-  }, []);
 
   // Handle click outside
   useEffect(() => {
@@ -84,15 +55,13 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    logoutService();
-    setUser(null);
+    authLogout();
+    setIsProfileOpen(false);
     navigate('/login');
   };
 
-  const isLoggedIn = user !== null;
-
   // Don't render until we know the auth state
-  if (loading) {
+  if (authLoading) {
     return (
       <header className="bg-slate-900 text-white shadow-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -187,7 +156,7 @@ const Header = () => {
 
             {/* User Actions */}
             <div className="hidden md:flex items-center space-x-4 ml-8">
-              {isLoggedIn ? (
+              {isAuthenticated ? (
                 <>
                   <button onClick={() => navigate('/saved-jobs')} className="relative text-gray-200 hover:text-yellow-400 transition">
                     <Bookmark className="h-5 w-5" />
@@ -221,15 +190,15 @@ const Header = () => {
                       <div className="h-8 w-8 rounded-full bg-yellow-400 flex items-center justify-center">
                         <User className="h-4 w-4 text-slate-900" />
                       </div>
-                      <span className="hidden lg:inline">{user?.name || 'User'}</span>
+                      <span className="hidden lg:inline">{authUser?.name || authUser?.email?.split('@')[0] || 'User'}</span>
                       <ChevronDown className="h-4 w-4" />
                     </button>
 
                     {isProfileOpen && (
                       <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
                         <div className="p-4 border-b border-gray-200 bg-gray-50">
-                          <p className="font-semibold text-gray-900">{user?.name}</p>
-                          <p className="text-sm text-gray-500 capitalize">{user?.role}</p>
+                          <p className="font-semibold text-gray-900">{authUser?.name || authUser?.email}</p>
+                          <p className="text-sm text-gray-500 capitalize">{authUser?.role || authUser?.userType}</p>
                         </div>
                         <div className="py-2">
                           <button onClick={() => { navigate('/profile'); setIsProfileOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -319,7 +288,7 @@ const Header = () => {
                 Contact
               </button>
               
-              {!isLoggedIn && (
+              {!isAuthenticated && (
                 <div className="flex flex-col space-y-3 pt-3 border-t border-white/10">
                   <button 
                     onClick={() => { navigate('/login'); setIsMenuOpen(false); }}

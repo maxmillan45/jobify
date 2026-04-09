@@ -1,17 +1,26 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login: authLogin, googleLogin } = useAuth();
+  const { login: authLogin, googleLogin, isAuthenticated, user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Redirect immediately when authenticated
+  useEffect(() => {
+    console.log('Auth state changed - isAuthenticated:', isAuthenticated, 'user:', user);
+    if (isAuthenticated && user) {
+      console.log('Redirecting to dashboard...');
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -27,14 +36,19 @@ const Login = () => {
 
     try {
       const result = await authLogin(formData);
+      console.log('Login result:', result);
+      
       if (result.success) {
-        navigate('/dashboard');
+        // Don't redirect here - let the useEffect handle it
+        console.log('Login successful, waiting for auth state update...');
+        // The useEffect will redirect when isAuthenticated becomes true
       } else {
         setError(result.message || 'Login failed');
+        setLoading(false);
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.message || 'Login failed. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

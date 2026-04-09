@@ -45,14 +45,26 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await apiLogin(credentials);
+      console.log('Login response in AuthContext:', response);
+      
       if (response.success && response.token) {
+        // Set token in localStorage and headers
         setAuthToken(response.token);
         setToken(response.token);
-        setUser(response.user);
+        
+        // Set user immediately
+        if (response.user) {
+          setUser(response.user);
+          // Also store user in localStorage for persistence
+          localStorage.setItem('user', JSON.stringify(response.user));
+        }
+        
+        // Return success with user data
         return { success: true, user: response.user };
       }
       return { success: false, message: response.message || 'Login failed' };
     } catch (error) {
+      console.error('Login error in context:', error);
       return { success: false, message: error.message };
     }
   };
@@ -63,7 +75,10 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.token) {
         setAuthToken(response.token);
         setToken(response.token);
-        setUser(response.user);
+        if (response.user) {
+          setUser(response.user);
+          localStorage.setItem('user', JSON.stringify(response.user));
+        }
         return { success: true, user: response.user };
       }
       return { success: false, message: response.message || 'Registration failed' };
@@ -79,7 +94,6 @@ export const AuthProvider = ({ children }) => {
 
   const googleCallback = async (token) => {
     try {
-      // Verify the token with backend
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/google/verify`, {
         method: 'POST',
         headers: {
@@ -94,6 +108,7 @@ export const AuthProvider = ({ children }) => {
         setAuthToken(data.token);
         setToken(data.token);
         setUser(data.user);
+        localStorage.setItem('user', JSON.stringify(data.user));
         return { success: true, user: data.user };
       }
       return { success: false, message: data.message || 'Google authentication failed' };
