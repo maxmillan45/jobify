@@ -2,3 +2,38 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Dark mode styles */
+.dark {
+  color-scheme: dark;
+}
+
+/* Compact view styles */
+.compact-view .space-y-4 > * + * {
+  margin-top: 0.5rem;
+}
+
+.compact-view .p-6 {
+  padding: 1rem;
+}
+
+.compact-view .gap-6 {
+  gap: 1rem;
+}
+
+/* Font size will be applied to html element */
+html {
+  transition: font-size 0.2s ease;
+}
+
+/* Dark mode specific overrides */
+.dark input,
+.dark textarea,
+.dark select {
+  color-scheme: dark;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af;
+}

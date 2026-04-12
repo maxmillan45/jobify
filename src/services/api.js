@@ -249,6 +249,37 @@ export const logout = () => {
   localStorage.removeItem('token');
 };
 
+// User Profile Services (NEW)
+export const updateUser = async (userData) => {
+  try {
+    const result = await apiCall('/users/profile', 'PUT', userData);
+    return result;
+  } catch (error) {
+    console.error('Update user error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+export const changePassword = async (passwordData) => {
+  try {
+    const result = await apiCall('/auth/change-password', 'POST', passwordData);
+    return result;
+  } catch (error) {
+    console.error('Change password error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+export const deleteAccount = async () => {
+  try {
+    const result = await apiCall('/users/account', 'DELETE');
+    return result;
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
 // Job Services
 export const getJobs = async (filters = {}) => {
   try {
@@ -413,12 +444,16 @@ export const deleteCompany = async (id) => {
   }
 };
 
+// Updated export default with new functions
 export default {
   register,
   login,
   googleLogin,
   getCurrentUser,
   logout,
+  updateUser,           // NEW
+  changePassword,       // NEW
+  deleteAccount,        // NEW
   getJobs,
   getJobById,
   createJob,

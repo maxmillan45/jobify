@@ -1,5 +1,5 @@
 // src/pages/Settings.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   User, 
@@ -8,20 +8,21 @@ import {
   Bell, 
   Shield, 
   Globe,
-  Moon,
-  Sun,
   Save,
   Eye,
   EyeOff,
   Trash2,
   AlertCircle,
-  CheckCircle,
-  ChevronRight
+  CheckCircle
 } from 'lucide-react';
+
+// Import API services
+import { getCurrentUser, updateUser, changePassword, deleteAccount } from '../services/api';
 
 const Settings = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -30,12 +31,12 @@ const Settings = () => {
   
   // Profile Settings
   const [profile, setProfile] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    location: 'New York, NY',
-    title: 'Software Developer',
-    bio: 'Passionate developer with 5 years of experience in web development.'
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    title: '',
+    bio: ''
   });
 
   // Password Settings
@@ -63,24 +64,96 @@ const Settings = () => {
     allowMessages: true
   });
 
-  // Appearance Settings
+  // Appearance Settings (without dark mode)
   const [appearance, setAppearance] = useState({
-    theme: 'light',
-    compactView: false,
-    fontSize: 'medium'
+    compactView: localStorage.getItem('compactView') === 'true',
+    fontSize: localStorage.getItem('fontSize') || 'medium'
   });
 
-  const handleProfileUpdate = (e) => {
-    e.preventDefault();
-    // Simulate API call
-    setTimeout(() => {
-      setSuccessMessage('Profile updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    }, 500);
+  // Apply font size on mount and when it changes
+  useEffect(() => {
+    const root = document.documentElement;
+    switch(appearance.fontSize) {
+      case 'small':
+        root.style.fontSize = '14px';
+        break;
+      case 'medium':
+        root.style.fontSize = '16px';
+        break;
+      case 'large':
+        root.style.fontSize = '18px';
+        break;
+      default:
+        root.style.fontSize = '16px';
+    }
+    localStorage.setItem('fontSize', appearance.fontSize);
+  }, [appearance.fontSize]);
+
+  // Apply compact view on mount and when it changes
+  useEffect(() => {
+    if (appearance.compactView) {
+      document.documentElement.classList.add('compact-view');
+    } else {
+      document.documentElement.classList.remove('compact-view');
+    }
+    localStorage.setItem('compactView', appearance.compactView);
+  }, [appearance.compactView]);
+
+  // Fetch user data on mount
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const result = await getCurrentUser();
+      
+      if (result.success && result.user) {
+        setProfile({
+          name: result.user.name || '',
+          email: result.user.email || '',
+          phone: result.user.phone || '',
+          location: result.user.location || '',
+          title: result.user.title || result.user.jobTitle || '',
+          bio: result.user.bio || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      setErrorMessage('Failed to load user data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePasswordUpdate = (e) => {
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+    
+    try {
+      const result = await updateUser(profile);
+      
+      if (result.success) {
+        setSuccessMessage('Profile updated successfully!');
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...storedUser, ...profile }));
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setErrorMessage(result.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setErrorMessage(error.message || 'Failed to update profile');
+    }
+  };
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+    
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setErrorMessage('New passwords do not match');
       setTimeout(() => setErrorMessage(''), 3000);
@@ -91,48 +164,63 @@ const Settings = () => {
       setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
-    // Simulate API call
-    setTimeout(() => {
-      setSuccessMessage('Password changed successfully!');
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setTimeout(() => setSuccessMessage(''), 3000);
-    }, 500);
+    
+    try {
+      const result = await changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      if (result.success) {
+        setSuccessMessage('Password changed successfully!');
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setErrorMessage(result.message || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setErrorMessage(error.message || 'Failed to change password');
+    }
   };
 
   const handleNotificationUpdate = (setting) => {
-    setNotifications({
-      ...notifications,
-      [setting]: !notifications[setting]
-    });
+    const newSettings = { ...notifications, [setting]: !notifications[setting] };
+    setNotifications(newSettings);
+    localStorage.setItem('notificationSettings', JSON.stringify(newSettings));
     setSuccessMessage('Notification settings updated');
     setTimeout(() => setSuccessMessage(''), 2000);
   };
 
   const handlePrivacyUpdate = (setting, value) => {
-    setPrivacy({
-      ...privacy,
-      [setting]: value
-    });
+    const newPrivacy = { ...privacy, [setting]: value };
+    setPrivacy(newPrivacy);
+    localStorage.setItem('privacySettings', JSON.stringify(newPrivacy));
     setSuccessMessage('Privacy settings updated');
     setTimeout(() => setSuccessMessage(''), 2000);
   };
 
   const handleAppearanceUpdate = (setting, value) => {
-    setAppearance({
-      ...appearance,
-      [setting]: value
-    });
+    setAppearance(prev => ({ ...prev, [setting]: value }));
     setSuccessMessage('Appearance settings updated');
     setTimeout(() => setSuccessMessage(''), 2000);
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      // Simulate API call
-      setTimeout(() => {
-        localStorage.removeItem('user');
-        navigate('/login');
-      }, 500);
+      try {
+        const result = await deleteAccount();
+        if (result.success) {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          navigate('/login');
+        } else {
+          setErrorMessage(result.message || 'Failed to delete account');
+        }
+      } catch (error) {
+        console.error('Error deleting account:', error);
+        setErrorMessage(error.message || 'Failed to delete account');
+      }
     }
   };
 
@@ -143,6 +231,17 @@ const Settings = () => {
     { id: 'privacy', label: 'Privacy', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Globe }
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -178,7 +277,7 @@ const Settings = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`px-6 py-4 flex items-center space-x-2 border-b-2 transition-colors ${
+                      className={`px-6 py-4 flex items-center space-x-2 border-b-2 transition-colors whitespace-nowrap ${
                         activeTab === tab.id
                           ? 'border-yellow-400 text-yellow-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -206,6 +305,7 @@ const Settings = () => {
                       value={profile.name}
                       onChange={(e) => setProfile({...profile, name: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                      required
                     />
                   </div>
                   <div>
@@ -215,9 +315,10 @@ const Settings = () => {
                     <input
                       type="email"
                       value={profile.email}
-                      onChange={(e) => setProfile({...profile, email: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-500"
+                      disabled
                     />
+                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed. Contact support for assistance.</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -261,7 +362,7 @@ const Settings = () => {
                       value={profile.bio}
                       onChange={(e) => setProfile({...profile, bio: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                    ></textarea>
+                    />
                   </div>
                   <button
                     type="submit"
@@ -482,52 +583,54 @@ const Settings = () => {
                 </div>
               )}
 
-              {/* Appearance Settings */}
+              {/* Appearance Settings (Font Size and Compact View only) */}
               {activeTab === 'appearance' && (
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Theme
+                      Font Size
                     </label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <button
-                        onClick={() => handleAppearanceUpdate('theme', 'light')}
-                        className={`p-4 border-2 rounded-lg flex items-center justify-center space-x-2 ${
-                          appearance.theme === 'light' ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'
+                        type="button"
+                        onClick={() => handleAppearanceUpdate('fontSize', 'small')}
+                        className={`p-4 border-2 rounded-lg flex items-center justify-center transition-all ${
+                          appearance.fontSize === 'small' 
+                            ? 'border-yellow-400 bg-yellow-50' 
+                            : 'border-gray-200 hover:border-yellow-400'
                         }`}
                       >
-                        <Sun className="h-5 w-5" />
-                        <span>Light</span>
+                        <span className="text-sm">Small</span>
                       </button>
                       <button
-                        onClick={() => handleAppearanceUpdate('theme', 'dark')}
-                        className={`p-4 border-2 rounded-lg flex items-center justify-center space-x-2 ${
-                          appearance.theme === 'dark' ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'
+                        type="button"
+                        onClick={() => handleAppearanceUpdate('fontSize', 'medium')}
+                        className={`p-4 border-2 rounded-lg flex items-center justify-center transition-all ${
+                          appearance.fontSize === 'medium' 
+                            ? 'border-yellow-400 bg-yellow-50' 
+                            : 'border-gray-200 hover:border-yellow-400'
                         }`}
                       >
-                        <Moon className="h-5 w-5" />
-                        <span>Dark</span>
+                        <span className="text-base">Medium</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAppearanceUpdate('fontSize', 'large')}
+                        className={`p-4 border-2 rounded-lg flex items-center justify-center transition-all ${
+                          appearance.fontSize === 'large' 
+                            ? 'border-yellow-400 bg-yellow-50' 
+                            : 'border-gray-200 hover:border-yellow-400'
+                        }`}
+                      >
+                        <span className="text-lg">Large</span>
                       </button>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Font Size
-                    </label>
-                    <select
-                      value={appearance.fontSize}
-                      onChange={(e) => handleAppearanceUpdate('fontSize', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                    >
-                      <option value="small">Small</option>
-                      <option value="medium">Medium</option>
-                      <option value="large">Large</option>
-                    </select>
-                  </div>
+                  
                   <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div>
                       <h3 className="font-medium text-gray-900">Compact View</h3>
-                      <p className="text-sm text-gray-500">Show more items per page</p>
+                      <p className="text-sm text-gray-500">Show more items per page with reduced spacing</p>
                     </div>
                     <button
                       onClick={() => handleAppearanceUpdate('compactView', !appearance.compactView)}
