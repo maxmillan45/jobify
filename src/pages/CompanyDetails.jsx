@@ -16,12 +16,11 @@ import {
   Clock,
   CheckCircle,
   Share2,
-  Bookmark,
   ExternalLink
 } from 'lucide-react';
 
-// Note: LinkedIn and Twitter are not in lucide-react, so we'll use custom SVG or remove them
-// If you want social icons, you can use simple SVG or remove them
+// Import API service
+import { getCompanyById } from '../services/api';
 
 const CompanyDetails = () => {
   const { id } = useParams();
@@ -32,23 +31,43 @@ const CompanyDetails = () => {
   const [following, setFollowing] = useState(false);
 
   useEffect(() => {
-    fetchCompany();
+    if (id) {
+      fetchCompany();
+    }
   }, [id]);
 
   const fetchCompany = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/companies/${id}`);
-      const data = await response.json();
+      setError('');
       
-      if (data.success && data.company) {
-        setCompany(data.company);
+      // Use the API service instead of direct fetch to localhost
+      const result = await getCompanyById(id);
+      console.log('Company API response:', result);
+      
+      // Handle different response structures
+      let companyData = null;
+      
+      if (result.success && result.company) {
+        companyData = result.company;
+      } else if (result.company) {
+        companyData = result.company;
+      } else if (result.job) {
+        companyData = result.job;
+      } else if (result.data && result.data.company) {
+        companyData = result.data.company;
+      } else if (result.id || result._id) {
+        companyData = result;
+      }
+      
+      if (companyData && (companyData.id || companyData._id)) {
+        setCompany(companyData);
       } else {
         setError('Company not found');
       }
     } catch (err) {
-      console.error('Error fetching company:', err);
-      setError('Failed to load company details');
+      console.error('Error fetching company details:', err);
+      setError(err.message || 'Failed to load company details');
     } finally {
       setLoading(false);
     }
@@ -62,8 +81,8 @@ const CompanyDetails = () => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: company.name,
-        text: `Check out ${company.name} on Jobify`,
+        title: company?.name,
+        text: `Check out ${company?.name} on Jobify`,
         url: window.location.href,
       });
     } else {
@@ -95,6 +114,12 @@ const CompanyDetails = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Companies
             </Link>
+            <button 
+              onClick={fetchCompany}
+              className="ml-4 inline-flex items-center text-yellow-600 hover:text-yellow-700"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -163,20 +188,20 @@ const CompanyDetails = () => {
               </div>
               
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{company.name}</h1>
-              <p className="text-gray-600 mb-4">{company.industry}</p>
+              <p className="text-gray-600 mb-4">{company.industry || 'Technology'}</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="flex items-center text-gray-600">
                   <MapPin className="h-5 w-5 mr-2 text-yellow-500" />
-                  <span>{company.location}</span>
+                  <span>{company.location || 'Remote / Worldwide'}</span>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Users className="h-5 w-5 mr-2 text-yellow-500" />
-                  <span>{company.size}</span>
+                  <span>{company.size || '11-50 employees'}</span>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Calendar className="h-5 w-5 mr-2 text-yellow-500" />
-                  <span>Founded {company.founded}</span>
+                  <span>Founded {company.founded || '2020'}</span>
                 </div>
                 {company.website && (
                   <div className="flex items-center text-gray-600">
@@ -202,7 +227,9 @@ const CompanyDetails = () => {
               <Building2 className="h-5 w-5 mr-2 text-yellow-500" />
               About Us
             </h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{company.description}</p>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+              {company.description || 'No description available.'}
+            </p>
           </div>
 
           {/* Company Culture & Benefits (if available) */}
@@ -242,10 +269,10 @@ const CompanyDetails = () => {
             {company.jobs && company.jobs.length > 0 ? (
               <div className="space-y-4">
                 {company.jobs.map((job) => (
-                  <div key={job.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all hover:border-yellow-200">
+                  <div key={job.id || job._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all hover:border-yellow-200">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <Link to={`/jobs/${job.id}`} className="group">
+                        <Link to={`/jobs/${job.id || job._id}`} className="group">
                           <h3 className="text-lg font-semibold text-gray-900 group-hover:text-yellow-600 mb-2">
                             {job.title}
                           </h3>
@@ -253,19 +280,19 @@ const CompanyDetails = () => {
                         <div className="flex flex-wrap gap-4 mb-3">
                           <span className="text-sm text-gray-600 flex items-center">
                             <MapPin className="h-4 w-4 mr-1" />
-                            {job.location}
+                            {job.location || 'Remote'}
                           </span>
                           <span className="text-sm text-gray-600 flex items-center">
                             <Briefcase className="h-4 w-4 mr-1" />
-                            {job.type}
+                            {job.type || 'Full-time'}
                           </span>
                           <span className="text-sm text-gray-600 flex items-center">
                             <DollarSign className="h-4 w-4 mr-1" />
-                            {job.salary || `$${job.salaryMin} - $${job.salaryMax}`}
+                            {job.salary || `${job.salaryMin || '50'}k - ${job.salaryMax || '80'}k`}
                           </span>
                           <span className="text-sm text-gray-600 flex items-center">
                             <Clock className="h-4 w-4 mr-1" />
-                            Posted {new Date(job.postedAt).toLocaleDateString()}
+                            Posted {job.postedAt ? new Date(job.postedAt).toLocaleDateString() : 'Recently'}
                           </span>
                         </div>
                         <p className="text-gray-600 text-sm line-clamp-2">{job.description}</p>
@@ -283,7 +310,7 @@ const CompanyDetails = () => {
                         </div>
                       </div>
                       <Link
-                        to={`/jobs/${job.id}`}
+                        to={`/jobs/${job.id || job._id}`}
                         className="ml-4 px-4 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500 transition-colors text-sm font-medium whitespace-nowrap"
                       >
                         Apply Now

@@ -1,11 +1,15 @@
-// src/pages/Companies.jsx - Update the company card
+// src/pages/Companies.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, MapPin, Users, Briefcase } from 'lucide-react';
 
+// Import API service
+import { getCompanies } from '../services/api';
+
 const Companies = () => {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -14,14 +18,38 @@ const Companies = () => {
 
   const fetchCompanies = async () => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`http://localhost:5000/api/companies${searchTerm ? `?search=${searchTerm}` : ''}`);
-      const data = await response.json();
-      if (data.success) {
-        setCompanies(data.companies);
+      // Use the API service instead of direct fetch to localhost
+      const result = await getCompanies();
+      console.log('Companies API response:', result);
+      
+      // Handle different response structures
+      let companiesData = [];
+      if (result.success && result.companies) {
+        companiesData = result.companies;
+      } else if (result.companies) {
+        companiesData = result.companies;
+      } else if (Array.isArray(result)) {
+        companiesData = result;
+      } else if (result.data && Array.isArray(result.data)) {
+        companiesData = result.data;
       }
+      
+      // Apply search filter locally
+      let filteredCompanies = companiesData;
+      if (searchTerm) {
+        filteredCompanies = companiesData.filter(company => 
+          company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          company.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          company.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      setCompanies(filteredCompanies);
     } catch (error) {
       console.error('Error fetching companies:', error);
+      setError(error.message || 'Failed to load companies');
     } finally {
       setLoading(false);
     }
@@ -30,7 +58,31 @@ const Companies = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading companies...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-7xl mx-auto text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h3 className="text-red-800 font-semibold mb-2">Error Loading Companies</h3>
+              <p className="text-red-600">{error}</p>
+              <button 
+                onClick={() => fetchCompanies()}
+                className="mt-4 px-4 py-2 bg-yellow-400 text-slate-900 rounded-lg hover:bg-yellow-500"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -59,7 +111,7 @@ const Companies = () => {
           {companies.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {companies.map((company) => (
-                <div key={company.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6">
+                <div key={company.id || company._id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="bg-gradient-to-br from-yellow-100 to-yellow-200 p-3 rounded-lg">
                       <Building2 className="h-8 w-8 text-yellow-600" />
@@ -69,24 +121,24 @@ const Companies = () => {
                     </span>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">{company.name}</h3>
-                  <p className="text-gray-600 text-sm mb-3">{company.industry}</p>
+                  <p className="text-gray-600 text-sm mb-3">{company.industry || 'Technology'}</p>
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-gray-500">
                       <MapPin className="h-4 w-4 mr-2" />
-                      {company.location}
+                      {company.location || 'Remote / Worldwide'}
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <Users className="h-4 w-4 mr-2" />
-                      {company.size}
+                      {company.size || '11-50 employees'}
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <Briefcase className="h-4 w-4 mr-2" />
                       {company.jobs?.length || 0} open positions
                     </div>
                   </div>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{company.description}</p>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{company.description || 'No description available'}</p>
                   <Link
-                    to={`/companies/${company.id}`}
+                    to={`/companies/${company.id || company._id}`}
                     className="inline-flex items-center text-yellow-600 hover:text-yellow-700 font-medium group"
                   >
                     View Company Details
