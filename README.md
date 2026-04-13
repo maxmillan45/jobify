@@ -70,12 +70,12 @@ This project is ideal for showcasing practical React skills in a portfolio.
 
 ### Steps
 
-1. **Clone the repository**
+1. *Clone the repository*
 ```bash
 git clone https://github.com/maxmillan45/jobify.git
 
-2. **Install dependencies**
-```bash
+*Install dependencies*
+
 npm install
 
 4. **Start the development server**
