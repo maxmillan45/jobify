@@ -43,7 +43,8 @@ export const AuthProvider = ({ children }) => {
           try {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
-            setLoading(false);
+            // ✅ CRITICAL: Don't set loading false yet — verify token with backend
+            await verifyTokenWithBackend(storedToken, parsedUser);
           } catch (e) {
             console.error('Error parsing stored user:', e);
             await loadUser();
@@ -58,6 +59,28 @@ export const AuthProvider = ({ children }) => {
     
     initAuth();
   }, []);
+
+  // ✅ NEW: Verify token with backend
+  const verifyTokenWithBackend = async (token, cachedUser) => {
+    try {
+      // You need to add this endpoint to your API service
+      const response = await getCurrentUser(); // This should verify the token
+      if (response.success && response.user) {
+        // Token is valid, update user data in case anything changed
+        setUser(response.user);
+        localStorage.setItem('user', JSON.stringify(response.user));
+      } else {
+        // Token is invalid, clear everything
+        console.warn('Token invalid, logging out');
+        logout();
+      }
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Listen to Firebase auth state changes
   useEffect(() => {
@@ -80,7 +103,6 @@ export const AuthProvider = ({ children }) => {
       } else if (!firebaseUser?.isAuthenticated && user) {
         // User logged out from Firebase
         console.log('Firebase user logged out');
-        // Don't auto logout here - let the logout function handle it
       }
     });
     
@@ -112,6 +134,7 @@ export const AuthProvider = ({ children }) => {
       
       if (response.success && response.token) {
         // Set token in localStorage and headers
+        localStorage.setItem('token', response.token); // ✅ Ensure token is saved
         setAuthToken(response.token);
         setToken(response.token);
         
@@ -136,6 +159,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await apiRegister(userData);
       if (response.success && response.token) {
+        localStorage.setItem('token', response.token); // ✅ Ensure token is saved
         setAuthToken(response.token);
         setToken(response.token);
         if (response.user) {
@@ -166,6 +190,7 @@ export const AuthProvider = ({ children }) => {
       const backendResult = await apiGoogleLogin(firebaseResult.token);
       
       if (backendResult.success && backendResult.token) {
+        localStorage.setItem('token', backendResult.token); // ✅ Ensure token is saved
         setAuthToken(backendResult.token);
         setToken(backendResult.token);
         
