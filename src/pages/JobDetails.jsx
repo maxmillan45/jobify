@@ -1,3 +1,4 @@
+// src/pages/JobDetails.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
@@ -15,24 +16,20 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { getJobById, applyForJob } from '../services/api';
+import { useAuth } from '../context/AuthContext'; // ✅ Import useAuth
 
 const JobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated, user, loading: authLoading } = useAuth(); // ✅ Use auth context
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [applying, setApplying] = useState(false);
   const [applicationSuccess, setApplicationSuccess] = useState(false);
   const [applicationError, setApplicationError] = useState('');
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
     fetchJob();
   }, [id]);
 
@@ -56,17 +53,16 @@ const JobDetails = () => {
   };
 
   const handleApply = async () => {
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    if (!token) {
+    // ✅ Use auth context instead of direct localStorage
+    if (!isAuthenticated) {
       navigate('/login', { state: { from: `/jobs/${id}` } });
       return;
     }
 
-    // Check if user is a job seeker
+    // Check if user is a job seeker (not employer)
     const userRole = user?.userType || user?.role;
-    if (userRole === 'employee' || userRole === 'employer') {
-      setApplicationError('Employers cannot apply for jobs. Please switch to a job seeker account.');
+    if (userRole === 'employer') {
+      setApplicationError('Employers cannot apply for jobs. Please register as a job seeker to apply.');
       return;
     }
 
@@ -80,6 +76,8 @@ const JobDetails = () => {
       };
       
       console.log('Sending application data:', applicationData);
+      console.log('Current user:', user);
+      console.log('Token exists:', !!localStorage.getItem('token'));
       
       const result = await applyForJob(applicationData);
       console.log('Application result:', result);
@@ -90,7 +88,7 @@ const JobDetails = () => {
           setApplicationSuccess(false);
         }, 5000);
         
-        // Optional: Show success message and redirect after 2 seconds
+        // Redirect after 2 seconds
         setTimeout(() => {
           navigate('/applications');
         }, 2000);
@@ -103,7 +101,7 @@ const JobDetails = () => {
       // Handle specific error messages
       if (err.message.includes('already applied')) {
         setApplicationError('You have already applied for this position.');
-      } else if (err.message.includes('401')) {
+      } else if (err.message.includes('login') || err.message.includes('401')) {
         setApplicationError('Please login to apply for this job.');
         setTimeout(() => navigate('/login'), 2000);
       } else if (err.message.includes('403')) {
@@ -116,7 +114,7 @@ const JobDetails = () => {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
@@ -170,6 +168,15 @@ const JobDetails = () => {
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
               <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
               <p className="text-red-800">{applicationError}</p>
+            </div>
+          )}
+
+          {/* Not Logged In Message */}
+          {!isAuthenticated && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 text-center">
+                Please <Link to="/login" className="font-semibold underline">login</Link> to apply for this job
+              </p>
             </div>
           )}
 
@@ -283,26 +290,28 @@ const JobDetails = () => {
             </div>
           )}
 
-          {/* Apply Button */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            {(user?.userType === 'employee' || user?.role === 'employee' || user?.role === 'employer') && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800 text-sm text-center">
-                  You are logged in as an employer. Please switch to a job seeker account to apply for jobs.
-                </p>
-              </div>
-            )}
-            <button
-              onClick={handleApply}
-              disabled={applying || (user?.userType === 'employee') || (user?.role === 'employee') || (user?.role === 'employer')}
-              className="w-full py-3 bg-yellow-400 text-slate-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {applying ? 'Submitting Application...' : 'Apply Now'}
-            </button>
-            <p className="text-sm text-gray-500 text-center mt-3">
-              By applying, you agree to our terms and conditions
-            </p>
-          </div>
+          {/* Apply Button - Only show if authenticated */}
+          {isAuthenticated && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              {user?.userType === 'employer' && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800 text-sm text-center">
+                    You are logged in as an employer. Please register as a job seeker to apply for jobs.
+                  </p>
+                </div>
+              )}
+              <button
+                onClick={handleApply}
+                disabled={applying || user?.userType === 'employer'}
+                className="w-full py-3 bg-yellow-400 text-slate-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {applying ? 'Submitting Application...' : 'Apply Now'}
+              </button>
+              <p className="text-sm text-gray-500 text-center mt-3">
+                By applying, you agree to our terms and conditions
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
